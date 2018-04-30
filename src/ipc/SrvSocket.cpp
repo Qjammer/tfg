@@ -96,7 +96,7 @@ void SrvSocket::sends(const std::string& msg,int accp){
 }
 
 void SrvSocket::sendsToAll(const std::string& msg){
-	for(int i=0;i<this->accepted.size();++i){
+	for(unsigned int i=0;i<this->accepted.size();++i){
 		this->sends(msg,i);
 	}
 }

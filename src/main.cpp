@@ -1,44 +1,55 @@
 #include<iostream>
 #include"SrvSocket.hpp"
 #include"CliSocket.hpp"
+#include"envrec.hpp"
 
 int main(){
+	bucket b;
+
+	b.pQueue.push_back({1.1, 2.2, 3.3});
+	b.pQueue.push_back({0.1, 2.2, 3.3});
+	b.pQueue.push_back({0.1, 1.2, 2.3});
+	b.processPoints();
+	std::cout<<b.FFo<<std::endl;
+	std::cout<<b.FZo<<std::endl;
+	std::cout<<b.beta<<std::endl;
+
+}
+/*
+void printVarVec(vecvar v);
+int main3(){
 	std::string addr="sock.sock";
 	SrvSocket s(addr);
 	CliSocket c1(addr);
 	s.accepts();
-	std::string msg3=s.prepareMessage("ag","ag",'2',1020);
+	std::string msg3=s.prepareMessage("ag","ag",'2',1020,(float) 1.23,'c',false);
+	std::cout<<msg3<<std::endl;
 	c1.sends(msg3);
 
 	std::vector<std::string> msgr1=s.receiveAccp(0);
 	std::string ms1=msgr1[0];
 	std::cout<<ms1<<std::endl;
 	vecvar vv=s.processMessage(ms1);
-	for(auto i:vv){
-		switch(i.first){
-			case typeChar<int>():
-				{typedef int T;
-				std::cout<<std::get<T>(i.second)<<" ";
-				break;}
-			case typeChar<char>():
-				{typedef char T;
-				std::cout<<std::get<T>(i.second)<<" ";
-				break;}
-			default:
-				break;
-
-		}
-	}
-	std::cout<<std::endl;
+	printVarVec(vv);
 	
 }
 
-
-int main2(){
-
-	std::cout<<typeChar<char>()<<std::endl;
-
+void printVarVec(vecvar v){
+	for(auto i:v){
+		switch(i.first){
+	#define printCase(U,i) case typeChar<U>():{std::cout<<std::get<U>(i.second)<<" ";break;}
+			printCase(void*,i);
+			printCase(bool,i);
+			printCase(char,i);
+			printCase(int,i);
+			printCase(long,i);
+			printCase(float,i);
+			printCase(double,i);
+		}
+	}
+	std::cout<<std::endl;
 }
+
 
 int main4(){
 	std::string addr="./sock.sock";
@@ -88,4 +99,4 @@ int main4(){
 	std::cout<<i<<std::endl;
 	}
 }
-
+*/

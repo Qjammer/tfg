@@ -4,9 +4,7 @@
 #include<string>
 #include<vector>
 #include<iostream>
-#include<map>
 #include<variant>
-#include<sstream>
 #include<unistd.h>
 #include<fcntl.h>
 
@@ -84,7 +82,7 @@ class Socket{
 	int prepareMessageTypeGen(std::string& ss, T& t,char c){
 		ss+=c;
 		char* cp=reinterpret_cast<char*>(&t);
-		for(int i=0;i<sizeof(T);++i){
+		for(unsigned int i=0;i<sizeof(T);++i){
 			ss+=cp[i];
 		}
 		return 1+sizeof(T);

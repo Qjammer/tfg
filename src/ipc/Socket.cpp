@@ -75,10 +75,10 @@ int Socket::sendsFD(const std::string& msg,int fd){
 }
 
 template<typename T>
-T processType(const std::string& msg,int& pos){
+T processType(const std::string& msg,unsigned int& pos){
 	char ar[sizeof(T)];
 	pos++;
-	for(int i=0;i<sizeof(T);++i){
+	for(unsigned int i=0;i<sizeof(T);++i){
 	ar[i]=msg[pos+i];
 	}
 	pos+=sizeof(T);
@@ -86,12 +86,12 @@ T processType(const std::string& msg,int& pos){
 	return *t;
 }
 
-#define processTypeSwitch(U) case typeChar<U>():{vec.push_back(myvari(typeChar<U>(),processType<U>(msg,pos)));break;}
 vecvar Socket::processMessage(const std::string& msg){
 	vecvar vec;
-	int pos=4;//Ignore header info for now
+	unsigned int pos=4;//Ignore header info for now
 	while(pos<msg.size()){
 		switch (msg[pos]){
+	#define processTypeSwitch(U) case typeChar<U>():{vec.push_back(myvari(typeChar<U>(),processType<U>(msg,pos)));break;}
 			processTypeSwitch(void*);
 			processTypeSwitch(bool);
 			processTypeSwitch(int);
