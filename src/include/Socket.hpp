@@ -5,10 +5,12 @@
 #include<vector>
 #include<iostream>
 #include<map>
+#include<variant>
 #include<sstream>
 #include<unistd.h>
 #include<fcntl.h>
 
+#define ALLOWED_TYPES void*,bool,char,int,long,float,double
 template<typename ...>
 struct is_one_of{static constexpr bool value=false;};
 
@@ -17,9 +19,10 @@ struct is_one_of<F,S,T...>{
 	static constexpr bool value=std::is_same<F,S>::value||is_one_of<F,T...>::value;
 };
 
+
 template<typename T>
 static constexpr char typeChar(){
-	static_assert(is_one_of<T,void*,bool,char,int,long,float,double>::value,"Type not supported");
+	static_assert(is_one_of<T,ALLOWED_TYPES>::value,"Type not supported");
 	return
 	std::is_same<T,void*>::value?'a':
 	std::is_same<T,bool>::value?'b':
@@ -30,6 +33,10 @@ static constexpr char typeChar(){
 	std::is_same<T,double>::value?'g':
 	'z';
 	};
+
+static char typeChars[]={'a', 'b', 'c', 'd', 'e', 'f', 'g'};
+typedef std::pair<char,std::variant<ALLOWED_TYPES>> myvari;
+typedef std::vector<myvari> vecvar;
 
 class Socket{
 	public:
@@ -66,7 +73,6 @@ class Socket{
 	template<typename T,typename... V>
 	int prepareMessageRec(std::string& ss,T t,V...v){
 		return prepareMessageType(ss,t)+prepareMessageRec(ss,v...);
-		
 	}
 
 	template<typename T>
@@ -89,61 +95,7 @@ class Socket{
 		return prepareMessageTypeGen(ss,t,typeChar<T>());
 	
 	}
+
+	vecvar processMessage(const std::string& msg);
 };
 
-/*
-int main2(){
-
-	std::cout<<typeChar<long>()<<std::endl;
-
-}
-
-int main4(){
-	std::string addr="./sock.sock";
-	SrvSocket s(addr);
-	CliSocket c1(addr);
-	CliSocket c2(addr);
-
-	std::cout<<s.fd<<std::endl;
-	std::cout<<s.addr.sun_path<<std::endl;
-	std::cout<<s.br<<std::endl;
-	std::cout<<s.lr<<std::endl;
-	std::cout<<c1.cr<<std::endl;
-		
-	s.accepts();
-	//s.accepts();
-
-	std::string msg1="hello world";
-	std::string msg2=std::string(100,'0')+std::string(100,'1')+std::string(5,'2');
-	std::string msg3=s.prepareMessage("ag","ag",'2',1020);
-	for(auto i:msg3){
-		std::cout<<+i<<" ";
-	}
-	std::cout<<std::endl;
-	
-	c1.sends(msg3);
-	//c1.sends(msg2);
-	std::vector<std::string> msgr1=s.receiveAccp(0);
-	for(auto i:msgr1[0]){
-		std::cout<<+i<<" ";
-	}
-	std::cout<<std::endl;
-	for(auto i:msgr1){
-		std::cout<<i<<std::endl;
-	}
-	auto p=reinterpret_cast<int*>(&(msgr1[0][8]));
-	std::cout<<"Received:"<<msgr1[0][8]<<std::endl;
-	std::cout<<"Received:"<<*p<<std::endl;
-	//s.sends(msg2,0);
-	std::vector<std::string> msgr2=c1.receive();
-
-	for(auto i:msgr2){
-		std::cout<<i<<std::endl;
-	}
-	
-	s.accepts();
-	for(auto i:s.accepted){
-	std::cout<<i<<std::endl;
-	}
-}
-*/
