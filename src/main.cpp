@@ -3,8 +3,31 @@
 #include"CliSocket.hpp"
 #include"envrec.hpp"
 
+void mapTest();
+
 int main(){
-	bucket b;
+	mapTest();
+}
+
+void mapTest(){
+	srand((unsigned int) time(0));
+	buckMap bm({2.0,2.0});
+	Eigen::Matrix<double,2,10> randM=Eigen::Matrix<double,2,10>::Random();
+	auto vC=Eigen::Vector2d(1.1,2.2);
+	auto randZ=vC.transpose()*randM;
+	for(int i=0;i<randM.cols();++i){
+		point p(randM.col(i).x(),randM.col(i).y(),2+randZ.col(i)[0]);
+		bm.insertPoint(p);
+	}
+	key k=bm.calcKey({0.0,0.0,0.0});
+	bm.processPendingBuckets();
+	std::cout<<bm.m.find(k)->second.FFo<<std::endl;
+	std::cout<<bm.m.find(k)->second.FZo<<std::endl;
+	std::cout<<bm.m.find(k)->second.beta<<std::endl;
+}
+
+int bucketTest(){
+	bucket b({0.6,1.7});
 
 	b.pQueue.push_back({1.1, 2.2, 3.3});
 	b.pQueue.push_back({0.1, 2.2, 3.3});
@@ -13,6 +36,7 @@ int main(){
 	std::cout<<b.FFo<<std::endl;
 	std::cout<<b.FZo<<std::endl;
 	std::cout<<b.beta<<std::endl;
+	std::cout<<b.z<<std::endl;
 
 }
 /*

@@ -1,39 +1,51 @@
 #include<map>
+#include<set>
 #include<eigen3/Eigen/Eigen>
 typedef Eigen::Vector3d point;
+typedef std::pair<int,int> key;
+
 
 class bucket{
-
 	public:
+	Eigen::Vector2d c;
 	std::vector<point> pQueue;
 	int pCounter;
 	Eigen::Matrix3d FFo;
 	Eigen::Vector3d FZo;
 	Eigen::Vector3d beta;
+	double z;
 	double w;
 
+	bucket(Eigen::Vector2d c);
 
-	bucket():pQueue(0),pCounter(0),FFo(Eigen::Matrix3d::Zero()),FZo(Eigen::Vector3d::Zero()){
-	
-	}
-	void processPoints(){
-		Eigen::MatrixXd F(3,this->pQueue.size());
-		Eigen::VectorXd Z(this->pQueue.size());
-		for(unsigned int i=0;i<this->pQueue.size();++i){
-			//TODO:Add weights
-			F.col(i)<<1,this->pQueue[i].x(),this->pQueue[i].y();
-			Z.row(i)<<this->pQueue[i].z();
-		}
-		this->pCounter+=this->pQueue.size();
-		this->pQueue.clear();
+	bool addPoints(const std::vector<point>& pts);
+	bool addPoint(point p);
+	void processPoints();
+	double calcWeight();
 
-		Eigen::Matrix3d FFn=F*Eigen::Transpose(F);
-		Eigen::Vector3d FZn=F*Z;
+	bool calcAllowed();
+	bool calcNeeded();
+};
 
-		this->FFo=FFn+this->FFo;
-		this->FZo=FZn+this->FZo;
+class buckMap{
+public:
+	std::map<key,bucket> m;
+	Eigen::Vector2d nd;
+	std::set<key> pb;//Pending buckets to process
 
-		this->beta= this->FFo.llt().solve(this->FZo);
-	}
+	buckMap(Eigen::Vector2d nd);
+
+	void processPendingBuckets();
+
+	bool insertPoint(point p);
+	bool insertPointToKey(point p,key k);
+
+	key calcKey(point p);
+};
+
+class envModule{
+public:
+	buckMap bm;
+
 
 };
