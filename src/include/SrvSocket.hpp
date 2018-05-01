@@ -7,9 +7,10 @@ class SrvSocket:public BaseSocket{
 	int lr;
 	std::vector<int> accepted;
 
-	SrvSocket(std::string& addr);
+	SrvSocket(const std::string& addr);
 		
 	int binds();
+	void handleUnlinkErr(int er);
 	void handleBindErr(int er);
 
 	int listens();
@@ -19,6 +20,7 @@ class SrvSocket:public BaseSocket{
 
 
 	int accepts();
+	void acceptsAll();
 	void handleAcceptErr(int er);
 
 	std::vector<std::string> receiveAccp(int accp);
@@ -26,5 +28,3 @@ class SrvSocket:public BaseSocket{
 	void sends(const std::string& msg,int accp);
 	void sendsToAll(const std::string& msg);
 };
-
-

@@ -47,6 +47,8 @@ void bucket::processPoints(){
 
 	this->beta= this->FFo.llt().solve(this->FZo);
 	this->z=this->beta.dot(Eigen::Vector3d(1,this->c.x(),this->c.y()));
+
+	this->calcWeight();
 }
 
 double bucket::calcWeight(){
@@ -65,7 +67,7 @@ void buckMap::processPendingBuckets(){
 	}
 }
 
-bool buckMap::insertPoint(point p){
+void buckMap::insertPoint(point p){
 	key k=this->calcKey(p);
 	if(this->insertPointToKey(p,k)){
 		this->pb.insert(k);

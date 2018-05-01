@@ -32,9 +32,15 @@ static constexpr char typeChar(){
 	'z';
 	};
 
-static char typeChars[]={'a', 'b', 'c', 'd', 'e', 'f', 'g'};
+//static char typeChars[]={'a', 'b', 'c', 'd', 'e', 'f', 'g'};
 typedef std::pair<char,std::variant<ALLOWED_TYPES>> myvari;
 typedef std::vector<myvari> vecvar;
+
+struct varmes{
+	std::string sender;
+	std::string purpose;
+	vecvar vars;
+};
 
 class BaseSocket{
 	public:
@@ -64,7 +70,7 @@ class BaseSocket{
 		ss+=sender[1];
 		ss+=type[0];
 		ss+=type[1];
-		int cd=prepareMessageRec(ss,v...);
+		this->prepareMessageRec(ss,v...);
 		return ss;
 	}
 
@@ -94,6 +100,6 @@ class BaseSocket{
 	
 	}
 
-	vecvar processMessage(const std::string& msg);
+	varmes processMessage(const std::string& msg);
 };
 

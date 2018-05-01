@@ -1,12 +1,47 @@
 #include<iostream>
-#include"SrvSocket.hpp"
-#include"CliSocket.hpp"
+#include"Socket.hpp"
 #include"envrec.hpp"
 
 void mapTest();
+void envrecTest();
 
 int main(){
-	mapTest();
+	envrecTest();
+	//mapTest();
+	return 0;
+}
+
+void envrecTest(){
+	srand((unsigned int) time(0));
+	
+	std::string tsock="testsock.sock";
+	SrvSocket ss(tsock);
+	EnvRec er("envrec.sock");
+	er.clis.emplace_back(tsock);
+	std::string msg1=ss.prepareMessage(modStr<MOD_TYPE::STATE>(),"or",1.0,0.0,0.0,0.0);
+	std::string msg2=ss.prepareMessage(modStr<MOD_TYPE::STATE>(),"ps",0.0,0.0,0.0);
+	ss.acceptsAll();
+	ss.sendsToAll(msg1);
+	ss.sendsToAll(msg2);
+	std::cout<<"or"<<std::endl<<er.ori.vec()<<std::endl;
+	std::cout<<"ps"<<std::endl<<er.pos<<std::endl;
+	er.handleInComms();
+	std::cout<<"or"<<std::endl<<er.ori.vec()<<std::endl;
+	std::cout<<"ps"<<std::endl<<er.pos<<std::endl;
+#define PTS 1000
+	Eigen::Matrix<double,2,PTS> randM=Eigen::Matrix<double,2,PTS>::Random();
+	auto vC=Eigen::Vector2d(0.1,0.2);
+	auto randZ=vC.transpose()*randM;
+	for(int i=0;i<randM.cols();++i){
+		point p(randM.col(i).x(),randM.col(i).y(),2+randZ.col(i)[0]);
+		er.unp.push_back(p);
+	}
+	er.process();
+	for(auto b:er.bm.m){
+		auto k=b.first;
+		std::cout<<k.first<<" "<<k.second<<" "<<b.second.w<<std::endl;
+	
+	}
 }
 
 void mapTest(){
@@ -24,9 +59,10 @@ void mapTest(){
 	std::cout<<bm.m.find(k)->second.FFo<<std::endl;
 	std::cout<<bm.m.find(k)->second.FZo<<std::endl;
 	std::cout<<bm.m.find(k)->second.beta<<std::endl;
+	
 }
 
-int bucketTest(){
+void bucketTest(){
 	bucket b({0.6,1.7});
 
 	b.pQueue.push_back({1.1, 2.2, 3.3});
@@ -37,7 +73,6 @@ int bucketTest(){
 	std::cout<<b.FZo<<std::endl;
 	std::cout<<b.beta<<std::endl;
 	std::cout<<b.z<<std::endl;
-
 }
 /*
 void printVarVec(vecvar v);

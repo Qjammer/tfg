@@ -86,8 +86,14 @@ T processType(const std::string& msg,unsigned int& pos){
 	return *t;
 }
 
-vecvar BaseSocket::processMessage(const std::string& msg){
-	vecvar vec;
+varmes BaseSocket::processMessage(const std::string& msg){
+	varmes vm;
+	vm.sender=std::string(msg.begin(),msg.begin()+2);
+	vm.purpose=std::string(msg.begin()+2,msg.begin()+4);
+	//vm.purpose[0]=msg[2];
+	//vm.purpose[1]=msg[3];
+
+	vecvar& vec=vm.vars;
 	unsigned int pos=4;//Ignore header info for now
 	while(pos<msg.size()){
 		switch (msg[pos]){
@@ -101,6 +107,6 @@ vecvar BaseSocket::processMessage(const std::string& msg){
 			processTypeSwitch(double);
 		}
 	}
-	return vec;
+	return vm;
 
 }

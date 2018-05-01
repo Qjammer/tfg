@@ -1,6 +1,6 @@
 #include"SrvSocket.hpp"
 
-SrvSocket::SrvSocket(std::string& addr):BaseSocket(addr),br(-1),lr(-1){
+SrvSocket::SrvSocket(const std::string& addr):BaseSocket(addr),br(-1),lr(-1){
 	this->init();
 }
 
@@ -8,12 +8,20 @@ SrvSocket::SrvSocket(std::string& addr):BaseSocket(addr),br(-1),lr(-1){
 int SrvSocket::binds(){
 	int ur=unlink(this->addr.sun_path);
 	int er=errno;
-	if(ur==-1){this->handleBindErr(er);}
+	if(ur==-1){this->handleUnlinkErr(er);}
 
 	this->br=bind(this->fd,(struct sockaddr*)&this->addr,sizeof(addr));
 	er=errno;
 	if(this->br==-1){this->handleBindErr(er);}
 	return this->br;
+}
+
+void SrvSocket::handleUnlinkErr(int er){
+	switch(er){
+		default:
+			std::cerr<<"Unhandled error in unlink:"<<er<<strerror(er)<<std::endl;
+			break;
+	}
 }
 	
 void SrvSocket::handleBindErr(int er){
@@ -67,6 +75,13 @@ int SrvSocket::accepts(){
 		this->setFlagFD(a,O_NONBLOCK);
 	}
 	return a;
+}
+
+void SrvSocket::acceptsAll(){
+	int r;
+	do{
+	r=this->accepts();
+	}while(r!=-1);
 }
 
 void SrvSocket::handleAcceptErr(int er){
