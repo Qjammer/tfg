@@ -87,3 +87,100 @@ key buckMap::calcKey(point p){
 	int ky=std::floor(p.y()/this->nd.y()+0.5);
 	return key(kx,ky);
 }
+
+EnvRec::EnvRec(const std::string& srvaddr):Module(MOD_TYPE::ENVREC,srvaddr),bm(Eigen::Vector2d(1.0,1.0)){}
+
+void EnvRec::preprocessPoints(){
+		for(auto i:this->unp){
+			//TODO:Transform
+
+			//Stuff with quaternions
+			Eigen::Quaterniond q;
+			q.w()=0;
+			q.vec()=i;
+			auto r=this->pos+(this->ori*q*this->ori.inverse()).vec();
+			this->bm.insertPoint(r);
+		}
+		this->unp.clear();
+	}
+
+void EnvRec::handleMesOri(varmes& mv){
+	if(mv.vars.size()==4){
+		if(mv.vars[0].first==typeChar<double>()&&
+			mv.vars[1].first==typeChar<double>()&&
+			mv.vars[2].first==typeChar<double>()&&
+			mv.vars[3].first==typeChar<double>()){
+
+			double w=std::get<double>(mv.vars[0].second);
+			double x=std::get<double>(mv.vars[1].second);
+			double y=std::get<double>(mv.vars[2].second);
+			double z=std::get<double>(mv.vars[3].second);
+			this->ori=Eigen::Quaterniond(w,x,y,z);
+		}
+	}
+}
+
+void EnvRec::handleMesPos(varmes& mv){
+	if(mv.vars.size()==3){
+		if(mv.vars[0].first==typeChar<double>()&&
+			mv.vars[1].first==typeChar<double>()&&
+			mv.vars[2].first==typeChar<double>()){
+
+			double x=std::get<double>(mv.vars[0].second);
+			double y=std::get<double>(mv.vars[1].second);
+			double z=std::get<double>(mv.vars[2].second);
+			this->pos=Eigen::Vector3d(x,y,z);
+		}
+	}
+}
+
+void EnvRec::handleVarMessage(varmes& mv){
+	if(mv.sender==modStr<MOD_TYPE::STATE>()){
+		if(mv.purpose=="or"){
+			this->handleMesOri(mv);
+		}else if(mv.purpose=="ps"){
+			this->handleMesPos(mv);
+		}
+	}
+}
+
+void EnvRec::handleInComms(){
+	for(auto cli:this->clis){
+		std::vector<std::string> msgs=cli.receive();
+		for(auto msg:msgs){
+			std::cout<<msg<<std::endl;
+			varmes vm=cli.processMessage(msg);
+			this->handleVarMessage(vm);
+		}
+		
+	}
+}
+
+
+std::string EnvRec::prepareMesBucket(key k){
+	int kx=k.first;
+	int ky=k.second;
+	double w=this->bm.m.find(k)->second.w;
+	return this->srvs.prepareMessage(modStr<MOD_TYPE::ENVREC>(),"nw",kx,ky,w);
+}
+
+void EnvRec::handleOutComms(){
+	this->srvs.acceptsAll();
+	for(auto k:this->bm.ub){
+		std::string msg=this->prepareMesBucket(k);
+		this->srvs.sendsToAll(msg);
+	}
+}
+
+void EnvRec::loop(){
+	while(true){
+		this->handleInComms();
+		this->process();
+		this->handleOutComms();
+	}
+}
+
+void EnvRec::process(){
+	this->preprocessPoints();
+	this->bm.processPendingBuckets();
+}
