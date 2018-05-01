@@ -32,6 +32,7 @@ public:
 	std::map<key,bucket> m;
 	Eigen::Vector2d nd;
 	std::set<key> pb;//Pending buckets to process
+	std::set<key> ub;//Updated buckets
 
 	buckMap(Eigen::Vector2d nd);
 
@@ -43,9 +44,26 @@ public:
 	key calcKey(point p);
 };
 
-class envModule{
-public:
-	buckMap bm;
+typedef point LIDARPoint;
 
+class envRec{
+public:
+	std::vector<LIDARPoint> unp;//Unprocessed points
+	buckMap bm;
+	Eigen::Quaterniond ori;
+
+	envRec(){}
+
+	point preprocessPoints(){
+		for(auto i:this->unp){
+			//TODO:Stuff with quaternions
+			this->bm.insertPoint(i);
+		}
+		this->unp.clear();
+	}
+
+	void handleInComms(){
+	
+	}
 
 };

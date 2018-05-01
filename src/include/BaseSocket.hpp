@@ -36,13 +36,13 @@ static char typeChars[]={'a', 'b', 'c', 'd', 'e', 'f', 'g'};
 typedef std::pair<char,std::variant<ALLOWED_TYPES>> myvari;
 typedef std::vector<myvari> vecvar;
 
-class Socket{
+class BaseSocket{
 	public:
 	struct sockaddr_un addr;
 	int fd;
 	char buf[2048];
 
-	Socket(const std::string& addr);
+	BaseSocket(const std::string& addr);
 	
 	void handleSocketErr(int er);
 

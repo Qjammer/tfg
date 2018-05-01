@@ -1,7 +1,7 @@
 #pragma once
-#include"Socket.hpp"
+#include"BaseSocket.hpp"
 
-class CliSocket:public Socket{
+class CliSocket:public BaseSocket{
 	public:
 	int cr;
 

@@ -1,6 +1,6 @@
 #include"CliSocket.hpp"
 
-CliSocket::CliSocket(const std::string& addr):Socket(addr),cr(-1){
+CliSocket::CliSocket(const std::string& addr):BaseSocket(addr),cr(-1){
 	this->init();
 }
 

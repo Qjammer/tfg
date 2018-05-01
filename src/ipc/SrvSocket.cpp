@@ -1,6 +1,6 @@
 #include"SrvSocket.hpp"
 
-SrvSocket::SrvSocket(std::string& addr):Socket(addr),br(-1),lr(-1){
+SrvSocket::SrvSocket(std::string& addr):BaseSocket(addr),br(-1),lr(-1){
 	this->init();
 }
 

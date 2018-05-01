@@ -1,6 +1,6 @@
-#include<Socket.hpp>
+#include<BaseSocket.hpp>
 
-Socket::Socket(const std::string& addr){
+BaseSocket::BaseSocket(const std::string& addr){
 	this->fd=socket(AF_UNIX,SOCK_SEQPACKET,0);
 	//this->fd=socket(AF_UNIX,SOCK_STREAM,0);
 	int er=errno;
@@ -11,7 +11,7 @@ Socket::Socket(const std::string& addr){
 	this->setFlagFD(this->fd,O_NONBLOCK);
 }
 
-void Socket::handleSocketErr(int er){
+void BaseSocket::handleSocketErr(int er){
 	switch(er){
 		case EACCES:
 			break;
@@ -25,18 +25,18 @@ void Socket::handleSocketErr(int er){
 	}
 }
 
-int Socket::setFlagFD(int fd,int flag){
+int BaseSocket::setFlagFD(int fd,int flag){
 	int flags=fcntl(fd,F_GETFL,0);
 	return fcntl(fd,F_SETFL,flags|flag);
 }
 
-int Socket::unsetFlagFD(int fd,int flag){
+int BaseSocket::unsetFlagFD(int fd,int flag){
 	int flags=fcntl(fd,F_GETFL,0);
 	return fcntl(fd,F_SETFL,flags&~flag);
 }
 
 
-std::vector<std::string> Socket::receiveFD(int fd){
+std::vector<std::string> BaseSocket::receiveFD(int fd){
 	std::vector<std::string> v;
 	std::string strbuf;
 	int sz;
@@ -55,7 +55,7 @@ std::vector<std::string> Socket::receiveFD(int fd){
 	return v;
 }
 
-void Socket::handleReadErr(int er){
+void BaseSocket::handleReadErr(int er){
 	switch(er){
 		case EWOULDBLOCK:
 			std::cerr<<"Nothing more to read"<<std::endl;
@@ -69,7 +69,7 @@ void Socket::handleReadErr(int er){
 	}
 }
 
-int Socket::sendsFD(const std::string& msg,int fd){
+int BaseSocket::sendsFD(const std::string& msg,int fd){
 	int sr=send(fd,msg.c_str(),msg.size(),0);
 	return sr;
 }
@@ -86,7 +86,7 @@ T processType(const std::string& msg,unsigned int& pos){
 	return *t;
 }
 
-vecvar Socket::processMessage(const std::string& msg){
+vecvar BaseSocket::processMessage(const std::string& msg){
 	vecvar vec;
 	unsigned int pos=4;//Ignore header info for now
 	while(pos<msg.size()){

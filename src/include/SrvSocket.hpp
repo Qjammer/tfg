@@ -1,7 +1,7 @@
 #pragma once
-#include"Socket.hpp"
+#include"BaseSocket.hpp"
 
-class SrvSocket:public Socket{
+class SrvSocket:public BaseSocket{
 	public:
 	int br;
 	int lr;

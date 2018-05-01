@@ -61,6 +61,7 @@ buckMap::buckMap(Eigen::Vector2d nd):nd(nd){}
 void buckMap::processPendingBuckets(){
 	for(auto i:this->pb){
 		this->m.find(i)->second.processPoints();
+		this->ub.insert(i);
 	}
 }
 
@@ -71,7 +72,6 @@ bool buckMap::insertPoint(point p){
 	}
 }
 
-
 bool buckMap::insertPointToKey(point p,key k){
 	auto f=this->m.find(k);
 	if(f==this->m.end()){
@@ -79,7 +79,6 @@ bool buckMap::insertPointToKey(point p,key k){
 	}
 	return this->m.find(k)->second.addPoint(p);
 }
-
 
 key buckMap::calcKey(point p){
 	int kx=std::floor(p.x()/this->nd.x()+0.5);
