@@ -61,15 +61,15 @@ public:
 
 	void preprocessPoints();
 
-	void handleInComms();
+	virtual void handleInComms();
 	void handleMesOri(varmes& mv);
 	void handleMesPos(varmes& mv);
 	void handleVarMessage(varmes& mv);
 
 
-	void handleOutComms();
+	virtual void handleOutComms();
 	std::string prepareMesBucket(key k);
 
-	void loop();
-	void process();
+	//void loop();
+	virtual void process();
 };

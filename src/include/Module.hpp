@@ -27,8 +27,21 @@ static const constexpr char* modStr(){
 
 class Module{
 public:
+	bool active;
 	MOD_TYPE mt;
 	SrvSocket srvs;
 	std::vector<CliSocket> clis;
 	Module(MOD_TYPE mt,const std::string& srvaddr):mt(mt),srvs(srvaddr){}
+
+	virtual void handleInComms()=0;
+	virtual void process()=0;
+	virtual void handleOutComms()=0;
+
+	virtual void loop(){
+		while(this->active){
+			this->handleInComms();
+			this->process();
+			this->handleOutComms();
+		}
+	}
 };

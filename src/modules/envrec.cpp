@@ -152,7 +152,6 @@ void EnvRec::handleInComms(){
 			varmes vm=cli.processMessage(msg);
 			this->handleVarMessage(vm);
 		}
-		
 	}
 }
 
@@ -169,14 +168,6 @@ void EnvRec::handleOutComms(){
 	for(auto k:this->bm.ub){
 		std::string msg=this->prepareMesBucket(k);
 		this->srvs.sendsToAll(msg);
-	}
-}
-
-void EnvRec::loop(){
-	while(true){
-		this->handleInComms();
-		this->process();
-		this->handleOutComms();
 	}
 }
 

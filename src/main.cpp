@@ -44,6 +44,7 @@ void envrecTest(){
 	}
 }
 
+/*
 void mapTest(){
 	srand((unsigned int) time(0));
 	buckMap bm({2.0,2.0});
@@ -74,6 +75,7 @@ void bucketTest(){
 	std::cout<<b.beta<<std::endl;
 	std::cout<<b.z<<std::endl;
 }
+*/
 /*
 void printVarVec(vecvar v);
 int main3(){
