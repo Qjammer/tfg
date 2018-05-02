@@ -98,7 +98,7 @@ void EnvRec::preprocessPoints(){
 			Eigen::Quaterniond q;
 			q.w()=0;
 			q.vec()=i;
-			auto r=this->pos+(this->ori*q*this->ori.inverse()).vec();
+			Eigen::Vector3d r=this->pos+(this->ori*q*this->ori.inverse()).vec();
 			this->bm.insertPoint(r);
 		}
 		this->unp.clear();

@@ -1,16 +1,42 @@
 #include<iostream>
 #include"Socket.hpp"
-#include"envrec.hpp"
+#include"contr.hpp"
 
-void mapTest();
-void envrecTest();
+//void mapTest();
+//void envrecTest();
+void contrTest();
 
 int main(){
-	envrecTest();
+	contrTest();
+	//envrecTest();
 	//mapTest();
 	return 0;
 }
 
+void contrTest(){
+	std::string tsock="testsock.sock";
+	SrvSocket ss(tsock);
+	Contr ct("controller.sock");
+	ct.clis.emplace_back(tsock);
+	double t=0.499*M_PI;
+	std::string msg1=ss.prepareMessage(modStr<MOD_TYPE::STATE>(),"or",cos(t/2),0.0,0.0,sin(t/2));
+	std::string msg2=ss.prepareMessage(modStr<MOD_TYPE::STATE>(),"ps",1.2,1.2,1.2);
+	std::string msg3=ss.prepareMessage(modStr<MOD_TYPE::PATHF>(),"np",1.2,2.2);
+	ss.acceptsAll();
+	ss.sendsToAll(msg1);
+	ss.sendsToAll(msg2);
+	ss.sendsToAll(msg3);
+
+	ct.handleInComms();
+	
+	std::cout<<"vr:"<<ct.vr<<std::endl;
+	std::cout<<"omega:"<<ct.omega<<std::endl;
+	ct.process();
+	std::cout<<"vr:"<<ct.vr<<std::endl;
+	std::cout<<"omega:"<<ct.omega<<std::endl;
+}
+
+/*
 void envrecTest(){
 	srand((unsigned int) time(0));
 	
@@ -43,7 +69,7 @@ void envrecTest(){
 	
 	}
 }
-
+*/
 /*
 void mapTest(){
 	srand((unsigned int) time(0));

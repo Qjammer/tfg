@@ -1,6 +1,12 @@
 #pragma once
 #include"Socket.hpp"
 
+inline Eigen::Vector3d rotQuat(const Eigen::Vector3d& v,const Eigen::Quaterniond& q){
+	Eigen::Quaterniond p(0,0,0,0);
+	p.vec()=v;
+	return (q*p*q.inverse()).vec();
+}
+
 enum MOD_TYPE:int{
 	SENS,
 	ENVREC,
