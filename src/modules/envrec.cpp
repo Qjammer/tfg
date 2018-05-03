@@ -144,16 +144,6 @@ void EnvRec::handleVarMessage(varmes& mv){
 	}
 }
 
-void EnvRec::handleInComms(){
-	for(auto cli:this->clis){
-		std::vector<std::string> msgs=cli.receive();
-		for(auto msg:msgs){
-			std::cout<<msg<<std::endl;
-			varmes vm=cli.processMessage(msg);
-			this->handleVarMessage(vm);
-		}
-	}
-}
 
 
 std::string EnvRec::prepareMesBucket(key k){

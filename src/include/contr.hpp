@@ -5,9 +5,6 @@
 #include"Module.hpp"
 #include"Socket.hpp"
 
-typedef Eigen::Vector3d point;
-typedef std::pair<int,int> key;
-
 class Contr:public Module{
 public:
 	Eigen::Quaterniond ori=Eigen::Quaterniond::Identity();
@@ -20,7 +17,6 @@ public:
 
 	Contr(const std::string& srvaddr);
 
-	virtual void handleInComms();
 	void handleVarMessage(varmes& mv);
 	void handleMesOri(varmes& mv);
 	void handleMesPos(varmes& mv);

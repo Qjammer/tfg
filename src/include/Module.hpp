@@ -39,7 +39,18 @@ public:
 	std::vector<CliSocket> clis;
 	Module(MOD_TYPE mt,const std::string& srvaddr):mt(mt),srvs(srvaddr){}
 
-	virtual void handleInComms()=0;
+	virtual void handleInComms(){
+		for(auto cli:this->clis){
+			std::vector<std::string> msgs=cli.receive();
+			for(auto msg:msgs){
+				std::cout<<msg<<std::endl;
+				varmes vm=cli.processMessage(msg);
+				this->handleVarMessage(vm);
+			}
+		}
+	}
+
+	virtual void handleVarMessage(varmes& mv)=0;
 	virtual void process()=0;
 	virtual void handleOutComms()=0;
 

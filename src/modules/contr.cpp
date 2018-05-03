@@ -61,17 +61,6 @@ void Contr::handleVarMessage(varmes& mv){
 	}
 }
 
-void Contr::handleInComms(){
-	for(auto cli:this->clis){
-		std::vector<std::string> msgs=cli.receive();
-		for(auto msg:msgs){
-			std::cout<<msg<<std::endl;
-			varmes vm=cli.processMessage(msg);
-			this->handleVarMessage(vm);
-		}
-	}
-}
-
 std::string Contr::prepareMesVel(){
 	return this->srvs.prepareMessage(modStr<MOD_TYPE::CONTR>(),"vo",this->vr,this->omega);
 }

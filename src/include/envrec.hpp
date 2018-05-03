@@ -61,7 +61,6 @@ public:
 
 	void preprocessPoints();
 
-	virtual void handleInComms();
 	void handleMesOri(varmes& mv);
 	void handleMesPos(varmes& mv);
 	void handleVarMessage(varmes& mv);
