@@ -1,50 +1,33 @@
 #include"contr.hpp"
 
-
 Contr::Contr(const std::string& srvaddr):Module(MOD_TYPE::CONTR,srvaddr){}
 
 void Contr::handleMesOri(varmes& mv){
-	if(mv.vars.size()==4){
-		if(mv.vars[0].first==typeChar<double>()&&
-			mv.vars[1].first==typeChar<double>()&&
-			mv.vars[2].first==typeChar<double>()&&
-			mv.vars[3].first==typeChar<double>()){
-
-			double w=std::get<double>(mv.vars[0].second);
-			double x=std::get<double>(mv.vars[1].second);
-			double y=std::get<double>(mv.vars[2].second);
-			double z=std::get<double>(mv.vars[3].second);
-			this->ori=Eigen::Quaterniond(w,x,y,z);
-		}
+	if(varCond<double,double,double,double>(mv)){
+		makeMesVar(double,w,0);
+		makeMesVar(double,x,1);
+		makeMesVar(double,y,2);
+		makeMesVar(double,z,3);
+		this->ori=Eigen::Quaterniond(w,x,y,z);
 	}
 }
 
 void Contr::handleMesPos(varmes& mv){
-	if(mv.vars.size()==3){
-		if(mv.vars[0].first==typeChar<double>()&&
-			mv.vars[1].first==typeChar<double>()&&
-			mv.vars[2].first==typeChar<double>()){
-
-			double x=std::get<double>(mv.vars[0].second);
-			double y=std::get<double>(mv.vars[1].second);
-			double z=std::get<double>(mv.vars[2].second);
-			this->pos=Eigen::Vector3d(x,y,z);
-		}
+	if(varCond<double,double,double>(mv)){
+		makeMesVar(double,x,0);
+		makeMesVar(double,y,1);
+		makeMesVar(double,z,2);
+		this->pos=Eigen::Vector3d(x,y,z);
 	}
 }
 
 void Contr::handleMesNextPos(varmes& mv){
-	if(mv.vars.size()==2){
-		if(mv.vars[0].first==typeChar<double>()&&
-		   mv.vars[1].first==typeChar<double>()){
-
-			double x=std::get<double>(mv.vars[0].second);
-			double y=std::get<double>(mv.vars[1].second);
-			this->nPos=Eigen::Vector2d(x,y);
-		}
+	if(varCond<double,double>(mv)){
+		makeMesVar(double,x,0);
+		makeMesVar(double,y,1);
+		this->nPos=Eigen::Vector2d(x,y);
 	}
 }
-
 
 void Contr::handleVarMessage(varmes& mv){
 	if(mv.sender==modStr<MOD_TYPE::STATE>()){

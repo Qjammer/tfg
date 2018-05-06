@@ -27,11 +27,13 @@ void contrTest(){
 	ss.sendsToAll(msg2);
 	ss.sendsToAll(msg3);
 
+	std::cout<<"ori:"<<ct.ori.vec()<<std::endl;
 	ct.handleInComms();
 	
 	std::cout<<"vr:"<<ct.vr<<std::endl;
 	std::cout<<"omega:"<<ct.omega<<std::endl;
 	ct.process();
+	std::cout<<"ori:"<<ct.ori.vec()<<std::endl;
 	std::cout<<"vr:"<<ct.vr<<std::endl;
 	std::cout<<"omega:"<<ct.omega<<std::endl;
 }
