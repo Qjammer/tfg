@@ -14,12 +14,13 @@ std::pair<T,U> operator+(const std::pair<T,U>& l,const std::pair<T,U>& r){
 	return {l.first+r.first,l.second+r.second};
 }
 
-bool operator<(const dKey& l,const dKey& r){
+inline bool operator<(const dKey& l,const dKey& r){
 	return(l.first<r.first||(l.first==r.first&&l.second<r.second));
 }
 
 class dNode{
 	public:
+		dNode(key k,Eigen::Vector2d pos):k(k),pos(pos){}
 	key k;
 	Eigen::Vector2d pos;
 	std::vector<key> neigh(){
@@ -47,9 +48,8 @@ class dNode{
 	}
 };
 
-double nCost(dNode l,dNode r){
-	return 0.5*(l.w+r.w)*(l.pos-r.pos).norm();
-}
+double nCost(dNode l,dNode r);
+
 class Pathf:public Module{
 public:
 	Eigen::Vector3d pos;
@@ -57,6 +57,7 @@ public:
 	key curNode;
 	key goal;
 	Eigen::Vector2d nextPos;
+	Eigen::Vector2d nd={0.5,0.5};
 	std::map<key,dNode> nmap;
 	std::map<dKey,key> openQueue;
 
@@ -68,6 +69,9 @@ public:
 
 	virtual void handleOutComms();
 	std::string prepareMesNextPos();
+
+	Eigen::Vector2d calcCenter(key k);
+	void insertNewNode(key k);
 
 	void updateRhs(key k);
 	void updateVertex(key k);

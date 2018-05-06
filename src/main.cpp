@@ -1,18 +1,46 @@
 #include<iostream>
 #include"Socket.hpp"
-#include"contr.hpp"
+#include"pathf.hpp"
 
 //void mapTest();
 //void envrecTest();
-void contrTest();
+//void contrTest();
+void pathfTest();
 
 int main(){
-	contrTest();
+	pathfTest();
+	//contrTest();
 	//envrecTest();
 	//mapTest();
 	return 0;
 }
 
+void pathfTest(){
+	std::string tsock="testsock.sock";
+	SrvSocket ss(tsock);
+	Pathf pf("controller.sock");
+	pf.clis.emplace_back(tsock);
+	std::string msg1=ss.prepareMessage(modStr<MOD_TYPE::STATE>(),"ps",1.2,1.2,1.2);
+	std::string msg2=ss.prepareMessage(modStr<MOD_TYPE::ENVREC>(),"nw",1,0,1.0);
+	ss.acceptsAll();
+	ss.sendsToAll(msg1);
+	ss.sendsToAll(msg2);
+
+	std::cout<<"size:"<<pf.nmap.size()<<std::endl;
+	pf.handleInComms();
+	std::cout<<"size:"<<pf.nmap.size()<<std::endl;
+	for(auto i:pf.nmap){
+		std::cout<<"key:"<<i.first.first<<":"<<i.first.second<<std::endl;
+		std::cout<<"w:"<<i.second.w<<std::endl;
+		std::cout<<"c:"<<i.second.pos<<std::endl;
+	}
+	pf.goal=key{1,1};
+	pf.curNode=key{0,0};
+	pf.computeShortestPath();
+
+}
+
+/*
 void contrTest(){
 	std::string tsock="testsock.sock";
 	SrvSocket ss(tsock);
@@ -37,7 +65,7 @@ void contrTest(){
 	std::cout<<"vr:"<<ct.vr<<std::endl;
 	std::cout<<"omega:"<<ct.omega<<std::endl;
 }
-
+*/
 /*
 void envrecTest(){
 	srand((unsigned int) time(0));
