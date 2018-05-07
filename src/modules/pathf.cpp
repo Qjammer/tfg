@@ -8,7 +8,7 @@ double nCost(const dNode& l,const dNode& r){
 
 Pathf::Pathf(const std::string& srvaddr):Module(MOD_TYPE::CONTR,srvaddr){}
 
-void Pathf::handleMesPos(varmes& mv){
+void Pathf::handleMesPos(const varmes& mv){
 	if(varCond<double,double,double>(mv)){
 		makeMesVar(double,x,0);
 		makeMesVar(double,y,1);
@@ -17,7 +17,7 @@ void Pathf::handleMesPos(varmes& mv){
 	}
 }
 
-void Pathf::handleMesWeight(varmes& mv){
+void Pathf::handleMesWeight(const varmes& mv){
 	if(varCond<int,int,double>(mv)){
 		makeMesVar(int,x,0);
 		makeMesVar(int,y,1);
@@ -46,7 +46,7 @@ void Pathf::handleVarMessage(varmes& mv){
 	}
 }
 
-std::string Pathf::prepareMesNextPos(){
+std::string Pathf::prepareMesNextPos() const{
 	return this->srvs.prepareMessage(modStr<MOD_TYPE::PATHF>(),"np",this->nextPos.x(),this->nextPos.y());
 }
 
@@ -62,15 +62,13 @@ Eigen::Vector2d Pathf::calcCenter(const key& k) const{
 	return {cx,cy};
 }
 
-void Pathf::insertNewNode(key k){
+void Pathf::insertNewNode(const key& k){
 	if(this->nmap.find(k)==this->nmap.end()){
 		this->nmap.emplace(k,dNode(k,this->calcCenter(k)));
-		std::cout<<"New key:"<<k.first<<","<<k.second<<std::endl;
-		std::cout<<"Number of nodes: "<<this->nmap.size()<<std::endl;
 	}
 }
 
-void Pathf::updateRhs(key k){
+void Pathf::updateRhs(const key& k){
 	double prhs=HUGE_VAL;
 	key kmin;
 	mapIt it=this->nmap.find(k);
@@ -93,7 +91,7 @@ void Pathf::updateRhs(key k){
 	it->second.rhs=prhs;
 }
 
-void Pathf::updateVertex(key k){
+void Pathf::updateVertex(const key& k){
 	if(this->goal!=k){
 		this->updateRhs(k);
 	}
@@ -126,16 +124,10 @@ void Pathf::computeShortestPath(){
 	auto u=this->openQueue.begin();
 	while((u=this->openQueue.begin())!=this->openQueue.end()&&(u->first<strt.calcdKey(strt.pos)||strt.rhs!=strt.g)){
 		mapIt it=this->nmap.find(u->second);
-		std::cout<<"Expanding node:"<<it->second.k.first<<","<<it->second.k.second<<std::endl;
 		if(it->second.g>it->second.rhs){
 			it->second.g=it->second.rhs;
 			for(auto i:it->second.neigh()){
-				std::cout<<"Updating key:"<<i.first<<","<<i.second<<std::endl;
-				//if(i.first<6&&i.second<6){
-					//if(i.first>-6&&i.second>-6){
-						this->updateVertex(i);
-					//}
-				//}
+				this->updateVertex(i);
 			}
 		}else{
 			it->second.g=HUGE_VAL;
@@ -145,7 +137,6 @@ void Pathf::computeShortestPath(){
 			}
 		}
 		this->openQueue.erase(u);
-		
 	}
 }
 

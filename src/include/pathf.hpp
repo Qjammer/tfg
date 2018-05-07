@@ -64,17 +64,17 @@ public:
 	Pathf(const std::string& srvaddr);
 
 	void handleVarMessage(varmes& mv);
-	void handleMesPos(varmes& mv);
-	void handleMesWeight(varmes& mv);
+	void handleMesPos(const varmes& mv);
+	void handleMesWeight(const varmes& mv);
 
 	virtual void handleOutComms();
-	std::string prepareMesNextPos();
+	std::string prepareMesNextPos() const;
 
 	Eigen::Vector2d calcCenter(const key& k) const;
-	void insertNewNode(key k);
+	void insertNewNode(const key& k);
 
-	void updateRhs(key k);
-	void updateVertex(key k);
+	void updateRhs(const key& k);
+	void updateVertex(const key& k);
 	void computeShortestPath();
 	virtual void process();
 };

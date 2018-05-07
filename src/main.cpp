@@ -21,10 +21,14 @@ void pathfTest(){
 	Pathf pf("controller.sock");
 	pf.clis.emplace_back(tsock);
 	std::string msg1=ss.prepareMessage(modStr<MOD_TYPE::STATE>(),"ps",1.2,1.2,1.2);
-	std::string msg2=ss.prepareMessage(modStr<MOD_TYPE::ENVREC>(),"nw",1,0,1.0);
+	std::string msg2=ss.prepareMessage(modStr<MOD_TYPE::ENVREC>(),"nw",0,0,1.0);
+	std::string msg3=ss.prepareMessage(modStr<MOD_TYPE::ENVREC>(),"nw",1,1,4.0);
+	std::string msg4=ss.prepareMessage(modStr<MOD_TYPE::ENVREC>(),"nw",2,2,1.0);
 	ss.acceptsAll();
 	ss.sendsToAll(msg1);
 	ss.sendsToAll(msg2);
+	ss.sendsToAll(msg3);
+	ss.sendsToAll(msg4);
 
 	std::cout<<"size:"<<pf.nmap.size()<<std::endl;
 	pf.handleInComms();
@@ -35,14 +39,14 @@ void pathfTest(){
 		std::cout<<"c:"<<i.second.pos<<std::endl;
 	}
 	pf.curNode=key{0,0};
-	pf.goal=key{2,1};
+	pf.goal=key{2,2};
 	pf.insertNewNode(pf.goal);
 	pf.insertNewNode(pf.curNode);
 	dNode& goal=pf.nmap.find(pf.goal)->second;
 	goal.rhs=0;
 	pf.openQueue.emplace(goal.calcdKey(pf.nmap.find(pf.curNode)->second.pos),pf.goal);
 	pf.computeShortestPath();
-	std::cout<<"Number of nodes:"<<pf.nmap.size()<<std::endl;
+	std::cout<<"Number of nodes: "<<pf.nmap.size()<<std::endl;
 	for(auto i:pf.nmap){
 		std::cout<<"key: "<<i.first.first<<","<<i.first.second<<"\tg: "<<i.second.g<<"\trhs: "<<i.second.rhs<<std::endl;
 	}

@@ -64,7 +64,7 @@ class BaseSocket{
 	virtual int init()=0;
 
 	template<typename... V>
-	std::string prepareMessage(const char sender[2], const char type[2],V... v){
+	std::string prepareMessage(const char sender[2], const char type[2],V... v) const{
 		std::string ss;
 		ss+=sender[0];
 		ss+=sender[1];
@@ -75,17 +75,17 @@ class BaseSocket{
 	}
 
 	template<typename T,typename... V>
-	int prepareMessageRec(std::string& ss,T t,V...v){
+	int prepareMessageRec(std::string& ss,T t,V...v)const{
 		return prepareMessageType(ss,t)+prepareMessageRec(ss,v...);
 	}
 
 	template<typename T>
-	int prepareMessageRec(std::string& ss,T t){
+	int prepareMessageRec(std::string& ss,T t) const{
 		return prepareMessageType(ss,t);
 	}
 
 	template<typename T>
-	int prepareMessageTypeGen(std::string& ss, T& t,char c){
+	int prepareMessageTypeGen(std::string& ss, T& t,char c)const{
 		ss+=c;
 		char* cp=reinterpret_cast<char*>(&t);
 		for(unsigned int i=0;i<sizeof(T);++i){
@@ -95,7 +95,7 @@ class BaseSocket{
 	}
 
 	template <typename T>
-	int prepareMessageType(std::string& ss, T t){
+	int prepareMessageType(std::string& ss, T t) const{
 		return prepareMessageTypeGen(ss,t,typeChar<T>());
 	
 	}

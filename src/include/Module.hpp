@@ -34,15 +34,15 @@ static const constexpr char* modStr(){
 #define makeMesVar(type,name,num) type name=std::get<type>(mv.vars[num].second);
 
 template<int I,typename T,typename...V>
-bool varCondRec(varmes& mv){
+bool varCondRec(const varmes& mv){
 	return mv.vars[I].first==typeChar<T>()&&varCondRec<I+1,V...>(mv);
 }
 
 template<int I>
-bool varCondRec(varmes& mv){return true;}
+bool varCondRec(const varmes& mv){return true;}
 
 template<typename...V>
-bool varCond(varmes& mv){
+bool varCond(const varmes& mv){
 	return (mv.vars.size()==sizeof...(V))&&varCondRec<0,V...>(mv);
 }
 
