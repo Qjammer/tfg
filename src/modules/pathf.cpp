@@ -2,7 +2,7 @@
 
 typedef std::map<key,dNode>::iterator mapIt;
 
-double nCost(dNode l,dNode r){
+double nCost(const dNode& l,const dNode& r){
 	return 0.5*(l.w+r.w)*(l.pos-r.pos).norm();
 }
 
@@ -56,7 +56,7 @@ void Pathf::handleOutComms(){
 	this->srvs.sendsToAll(msg);
 }
 
-Eigen::Vector2d Pathf::calcCenter(key k){
+Eigen::Vector2d Pathf::calcCenter(const key& k) const{
 	double cx=k.first*this->nd.x();
 	double cy=k.second*this->nd.y();
 	return {cx,cy};
@@ -65,13 +65,14 @@ Eigen::Vector2d Pathf::calcCenter(key k){
 void Pathf::insertNewNode(key k){
 	if(this->nmap.find(k)==this->nmap.end()){
 		this->nmap.emplace(k,dNode(k,this->calcCenter(k)));
+		std::cout<<"New key:"<<k.first<<","<<k.second<<std::endl;
 		std::cout<<"Number of nodes: "<<this->nmap.size()<<std::endl;
 	}
 }
 
 void Pathf::updateRhs(key k){
 	double prhs=HUGE_VAL;
-	key km;
+	key kmin;
 	mapIt it=this->nmap.find(k);
 	if(it==this->nmap.end()){
 		this->insertNewNode(k);
@@ -84,9 +85,9 @@ void Pathf::updateRhs(key k){
 			neig=this->nmap.find(i);
 		}
 		double c=nCost(it->second,neig->second);
-		if(c+it->second.g<prhs){
+		if((c+neig->second.g)<prhs){
 			prhs=c+neig->second.g;
-			km=i;
+			kmin=i;
 		}
 	}
 	it->second.rhs=prhs;
@@ -106,32 +107,45 @@ void Pathf::updateVertex(key k){
 		it=this->nmap.find(k);
 	}
 	if(it->second.g!=it->second.rhs){
-		this->openQueue.emplace(it->second.calcdKey(this->nmap.find(this->curNode)->second.pos),k);
+		mapIt ss=this->nmap.find(this->curNode);
+		if(ss==this->nmap.end()){
+			this->insertNewNode(this->curNode);
+			ss=this->nmap.find(this->curNode);
+		}
+		this->openQueue.emplace(it->second.calcdKey(ss->second.pos),k);
 	}
 }
 
 void Pathf::computeShortestPath(){
-	mapIt it=this->nmap.find(this->curNode);
-	if(it==this->nmap.end()){
+	mapIt cur=this->nmap.find(this->curNode);
+	if(cur==this->nmap.end()){
 		this->insertNewNode(this->curNode);
-		it=this->nmap.find(this->curNode);
+		cur=this->nmap.find(this->curNode);
 	}
-	dNode& strt=it->second;
-	dKey skey=strt.calcdKey(strt.pos);
-	while(this->nmap.begin()->first<skey||strt.rhs!=strt.g){
-		auto u=this->nmap.begin();
-		if(u->second.g>u->second.rhs){
-			u->second.g=u->second.rhs;
-			for(auto i:u->second.neigh()){
-				this->updateVertex(i);
+	dNode& strt=cur->second;
+	auto u=this->openQueue.begin();
+	while((u=this->openQueue.begin())!=this->openQueue.end()&&(u->first<strt.calcdKey(strt.pos)||strt.rhs!=strt.g)){
+		mapIt it=this->nmap.find(u->second);
+		std::cout<<"Expanding node:"<<it->second.k.first<<","<<it->second.k.second<<std::endl;
+		if(it->second.g>it->second.rhs){
+			it->second.g=it->second.rhs;
+			for(auto i:it->second.neigh()){
+				std::cout<<"Updating key:"<<i.first<<","<<i.second<<std::endl;
+				//if(i.first<6&&i.second<6){
+					//if(i.first>-6&&i.second>-6){
+						this->updateVertex(i);
+					//}
+				//}
 			}
 		}else{
-			u->second.g=HUGE_VAL;
+			it->second.g=HUGE_VAL;
 			this->updateVertex(u->first);
-			for(auto i:u->second.neigh()){
+			for(auto i:it->second.neigh()){
 				this->updateVertex(i);
 			}
 		}
+		this->openQueue.erase(u);
+		
 	}
 }
 

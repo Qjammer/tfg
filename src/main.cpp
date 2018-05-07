@@ -34,9 +34,19 @@ void pathfTest(){
 		std::cout<<"w:"<<i.second.w<<std::endl;
 		std::cout<<"c:"<<i.second.pos<<std::endl;
 	}
-	pf.goal=key{1,1};
 	pf.curNode=key{0,0};
+	pf.goal=key{2,1};
+	pf.insertNewNode(pf.goal);
+	pf.insertNewNode(pf.curNode);
+	dNode& goal=pf.nmap.find(pf.goal)->second;
+	goal.rhs=0;
+	pf.openQueue.emplace(goal.calcdKey(pf.nmap.find(pf.curNode)->second.pos),pf.goal);
 	pf.computeShortestPath();
+	std::cout<<"Number of nodes:"<<pf.nmap.size()<<std::endl;
+	for(auto i:pf.nmap){
+		std::cout<<"key: "<<i.first.first<<","<<i.first.second<<"\tg: "<<i.second.g<<"\trhs: "<<i.second.rhs<<std::endl;
+	}
+	//std::cout<<"Open Queue Remaining Size:"<<pf.openQueue.size()<<std::endl;
 
 }
 

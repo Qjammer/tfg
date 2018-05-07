@@ -23,7 +23,7 @@ class dNode{
 	dNode(key k,Eigen::Vector2d pos):k(k),pos(pos){}
 	key k;
 	Eigen::Vector2d pos;
-	std::vector<key> neigh(){
+	std::vector<key> neigh() const{
 		std::vector<key> v;
 		v.push_back(this->k+key{1,0});
 		v.push_back(this->k+key{1,1});
@@ -37,18 +37,18 @@ class dNode{
 	}
 	
 
-	double w;
-	double g;
-	double rhs;
-	double h;
-	double heur(Eigen::Vector2d n){return (this->pos-n).norm();}
+	double w=2;
+	double g=HUGE_VAL;
+	double rhs=HUGE_VAL;
+	double h=HUGE_VAL;
+	double heur(Eigen::Vector2d n) const{return (this->pos-n).norm();}
 
-	dKey calcdKey(Eigen::Vector2d sst){
+	dKey calcdKey(Eigen::Vector2d sst) const{
 		return dKey(std::min(this->g,this->rhs)+this->heur(sst),std::min(this->g,this->rhs));
 	}
 };
 
-double nCost(dNode l,dNode r);
+double nCost(const dNode& l,const dNode& r);
 
 class Pathf:public Module{
 public:
@@ -70,7 +70,7 @@ public:
 	virtual void handleOutComms();
 	std::string prepareMesNextPos();
 
-	Eigen::Vector2d calcCenter(key k);
+	Eigen::Vector2d calcCenter(const key& k) const;
 	void insertNewNode(key k);
 
 	void updateRhs(key k);
