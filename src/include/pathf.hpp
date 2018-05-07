@@ -20,7 +20,7 @@ inline bool operator<(const dKey& l,const dKey& r){
 
 class dNode{
 	public:
-		dNode(key k,Eigen::Vector2d pos):k(k),pos(pos){}
+	dNode(key k,Eigen::Vector2d pos):k(k),pos(pos){}
 	key k;
 	Eigen::Vector2d pos;
 	std::vector<key> neigh(){

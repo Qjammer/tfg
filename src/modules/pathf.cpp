@@ -1,4 +1,5 @@
 #include"pathf.hpp"
+
 typedef std::map<key,dNode>::iterator mapIt;
 
 double nCost(dNode l,dNode r){
@@ -64,6 +65,7 @@ Eigen::Vector2d Pathf::calcCenter(key k){
 void Pathf::insertNewNode(key k){
 	if(this->nmap.find(k)==this->nmap.end()){
 		this->nmap.emplace(k,dNode(k,this->calcCenter(k)));
+		std::cout<<"Number of nodes: "<<this->nmap.size()<<std::endl;
 	}
 }
 
@@ -71,7 +73,7 @@ void Pathf::updateRhs(key k){
 	double prhs=HUGE_VAL;
 	key km;
 	mapIt it=this->nmap.find(k);
-	if(it==this->nmap.end(){
+	if(it==this->nmap.end()){
 		this->insertNewNode(k);
 		it=this->nmap.find(k);
 	}
@@ -94,7 +96,7 @@ void Pathf::updateVertex(key k){
 	if(this->goal!=k){
 		this->updateRhs(k);
 	}
-	mapIt dk=this->openQueue.find(k);
+	std::map<dKey,key>::iterator dk=this->openQueue.find(k);
 	if(dk!=this->openQueue.end()){
 		this->openQueue.erase(dk);
 	}
@@ -109,7 +111,12 @@ void Pathf::updateVertex(key k){
 }
 
 void Pathf::computeShortestPath(){
-	dNode& strt=this->nmap.find(this->curNode)->second;
+	mapIt it=this->nmap.find(this->curNode);
+	if(it==this->nmap.end()){
+		this->insertNewNode(this->curNode);
+		it=this->nmap.find(this->curNode);
+	}
+	dNode& strt=it->second;
 	dKey skey=strt.calcdKey(strt.pos);
 	while(this->nmap.begin()->first<skey||strt.rhs!=strt.g){
 		auto u=this->nmap.begin();
