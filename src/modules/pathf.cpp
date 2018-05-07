@@ -1,4 +1,5 @@
 #include"pathf.hpp"
+typedef std::map<key,dNode>::iterator mapIt;
 
 double nCost(dNode l,dNode r){
 	return 0.5*(l.w+r.w)*(l.pos-r.pos).norm();
@@ -22,8 +23,8 @@ void Pathf::handleMesWeight(varmes& mv){
 		makeMesVar(double,w,2);
 		//TODO: Call function create node if necessary and add to changed nodes
 		key k(x,y);
-		std::map<key,dNode>::iterator it;
-		if((it=this->nmap.find(k))==this->nmap.end()){
+		mapIt it=this->nmap.find(k);
+		if(it==this->nmap.end()){
 			insertNewNode(k);
 			it=this->nmap.find(k);
 		}
@@ -64,34 +65,46 @@ void Pathf::insertNewNode(key k){
 	if(this->nmap.find(k)==this->nmap.end()){
 		this->nmap.emplace(k,dNode(k,this->calcCenter(k)));
 	}
-
-	
 }
 
 void Pathf::updateRhs(key k){
 	double prhs=HUGE_VAL;
 	key km;
-	for(auto i:this->nmap.find(k)->second.neigh()){
-		double c=nCost(this->nmap.find(k)->second,this->nmap.find(i)->second);
-		if(c+this->nmap.find(i)->second.g<prhs){
-			prhs=c+this->nmap.find(i)->second.g;
+	mapIt it=this->nmap.find(k);
+	if(it==this->nmap.end(){
+		this->insertNewNode(k);
+		it=this->nmap.find(k);
+	}
+	for(auto i:it->second.neigh()){
+		mapIt neig=this->nmap.find(i);
+		if(neig==this->nmap.end()){
+			this->insertNewNode(i);
+			neig=this->nmap.find(i);
+		}
+		double c=nCost(it->second,neig->second);
+		if(c+it->second.g<prhs){
+			prhs=c+neig->second.g;
 			km=i;
 		}
 	}
-	this->nmap.find(k)->second.rhs=prhs;
-
+	it->second.rhs=prhs;
 }
 
 void Pathf::updateVertex(key k){
 	if(this->goal!=k){
 		this->updateRhs(k);
 	}
-	std::map<dKey,key>::iterator dk;
-	if((dk=this->openQueue.find(k))!=this->openQueue.end()){
+	mapIt dk=this->openQueue.find(k);
+	if(dk!=this->openQueue.end()){
 		this->openQueue.erase(dk);
 	}
-	if(this->nmap.find(k)->second.g!=this->nmap.find(k)->second.rhs){
-		this->openQueue.emplace(this->nmap.find(k)->second.calcdKey(this->nmap.find(this->curNode)->second.pos),k);
+	mapIt it=this->nmap.find(k);
+	if(it==this->nmap.end()){
+		this->insertNewNode(k);
+		it=this->nmap.find(k);
+	}
+	if(it->second.g!=it->second.rhs){
+		this->openQueue.emplace(it->second.calcdKey(this->nmap.find(this->curNode)->second.pos),k);
 	}
 }
 
@@ -105,19 +118,14 @@ void Pathf::computeShortestPath(){
 			for(auto i:u->second.neigh()){
 				this->updateVertex(i);
 			}
-
-		} else{
+		}else{
 			u->second.g=HUGE_VAL;
 			this->updateVertex(u->first);
 			for(auto i:u->second.neigh()){
 				this->updateVertex(i);
 			}
 		}
-	
 	}
-
-
-
 }
 
 void Pathf::process(){
