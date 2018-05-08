@@ -8,12 +8,33 @@ double nCost(const dNode& l,const dNode& r){
 
 Pathf::Pathf(const std::string& srvaddr):Module(MOD_TYPE::CONTR,srvaddr){}
 
+key Pathf::calcKey(Eigen::Vector2d p){
+	int kx=std::floor(p.x()/this->nd.x()+0.5);
+	int ky=std::floor(p.y()/this->nd.y()+0.5);
+	return key(kx,ky);
+}
+
 void Pathf::handleMesPos(const varmes& mv){
 	if(varCond<double,double,double>(mv)){
 		makeMesVar(double,x,0);
 		makeMesVar(double,y,1);
 		makeMesVar(double,z,2);
 		this->pos=Eigen::Vector3d(x,y,z);
+		key newkey=this->calcKey(this->pos.head<2>());
+		if(newkey!=this->curNode){
+			auto it1=this->nmap.find(this->curNode);
+			if(it1==this->nmap.end()){
+				this->insertNewNode(this->curNode);
+				it1=this->nmap.find(this->curNode);
+			}
+			auto it2=this->nmap.find(newkey);
+			if(it2==this->nmap.end()){
+				this->insertNewNode(newkey);
+				it2=this->nmap.find(newkey);
+			}
+			this->km+=it1->second.heur(it2->second.pos);
+			this->curNode=newkey;
+		}
 	}
 }
 
@@ -30,6 +51,35 @@ void Pathf::handleMesWeight(const varmes& mv){
 			it=this->nmap.find(k);
 		}
 		it->second.w=w;
+		this->newWeights.insert(k);
+	}
+}
+
+void Pathf::handleMesGoal(const varmes& mv){
+	if(varCond<int,int>(mv)){
+		makeMesVar(int,x,0);
+		makeMesVar(int,y,1);
+		//TODO: Call function create node if necessary and add to changed nodes
+		key k(x,y);
+		this->goal=k;
+		this->openQueue.clear();
+		this->km=0;
+		for(auto& n:this->nmap){
+			n.second.rhs=HUGE_VAL;
+			n.second.g=HUGE_VAL;
+		}
+		auto goal=this->nmap.find(k);
+		if(goal==this->nmap.end()){
+			this->insertNewNode(k);
+			goal=this->nmap.find(k);
+		}
+		goal->second.rhs=0;
+		auto start=this->nmap.find(this->curNode);
+		if(start==this->nmap.end()){
+			this->insertNewNode(this->curNode);
+			start=this->nmap.find(this->curNode);
+		}
+		this->openQueue.emplace(goal->second.calcdKey(start->second.pos,this->km),k);
 	}
 }
 
@@ -42,6 +92,11 @@ void Pathf::handleVarMessage(varmes& mv){
 	if(mv.sender==modStr<MOD_TYPE::ENVREC>()){
 		if(mv.purpose=="nw"){
 			this->handleMesWeight(mv);
+		}
+	}
+	if(mv.sender==modStr<MOD_TYPE::SUPER>()){
+		if(mv.purpose=="ng"){
+			this->handleMesGoal(mv);
 		}
 	}
 }
@@ -110,7 +165,7 @@ void Pathf::updateVertex(const key& k){
 			this->insertNewNode(this->curNode);
 			ss=this->nmap.find(this->curNode);
 		}
-		this->openQueue.emplace(it->second.calcdKey(ss->second.pos),k);
+		this->openQueue.emplace(it->second.calcdKey(ss->second.pos,this->km),k);
 	}
 }
 
@@ -122,9 +177,16 @@ void Pathf::computeShortestPath(){
 	}
 	dNode& strt=cur->second;
 	auto u=this->openQueue.begin();
-	while((u=this->openQueue.begin())!=this->openQueue.end()&&(u->first<strt.calcdKey(strt.pos)||strt.rhs!=strt.g)){
-		mapIt it=this->nmap.find(u->second);
-		if(it->second.g>it->second.rhs){
+	while((u=this->openQueue.begin())!=this->openQueue.end()&&(u->first<strt.calcdKey(strt.pos,this->km)||strt.rhs!=strt.g)){
+		dKey kold=u->first;
+		key k=u->second;
+		this->openQueue.erase(u);
+		mapIt it=this->nmap.find(k);
+		dKey knew=it->second.calcdKey(strt.pos,this->km);
+		if(kold<knew){
+			std::cout<<"Updating queue"<<std::endl;
+			this->openQueue.emplace(knew,k);
+		}else if(it->second.g>it->second.rhs){
 			it->second.g=it->second.rhs;
 			for(auto i:it->second.neigh()){
 				this->updateVertex(i);
@@ -136,10 +198,16 @@ void Pathf::computeShortestPath(){
 				this->updateVertex(i);
 			}
 		}
-		this->openQueue.erase(u);
 	}
 }
 
 void Pathf::process(){
-
+	//update vertex that have changed
+	std::cout<<"Updated Weights: "<<this->newWeights.size()<<std::endl;
+	for(auto n:this->newWeights){
+		this->updateVertex(n);
+	}
+	this->newWeights.clear();
+	//compute shortest path
+	this->computeShortestPath();
 }

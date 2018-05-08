@@ -43,8 +43,8 @@ class dNode{
 	double h=HUGE_VAL;
 	double heur(Eigen::Vector2d n) const{return (this->pos-n).norm();}
 
-	dKey calcdKey(Eigen::Vector2d sst) const{
-		return dKey(std::min(this->g,this->rhs)+this->heur(sst),std::min(this->g,this->rhs));
+	dKey calcdKey(Eigen::Vector2d sst,double km) const{
+		return dKey(std::min(this->g,this->rhs)+this->heur(sst)+km,std::min(this->g,this->rhs));
 	}
 };
 
@@ -60,12 +60,17 @@ public:
 	Eigen::Vector2d nd={0.5,0.5};
 	std::map<key,dNode> nmap;
 	std::map<dKey,key> openQueue;
+	std::set<key> newWeights;
+	double km=0;
 
 	Pathf(const std::string& srvaddr);
+
+	key calcKey(Eigen::Vector2d p);
 
 	void handleVarMessage(varmes& mv);
 	void handleMesPos(const varmes& mv);
 	void handleMesWeight(const varmes& mv);
+	void handleMesGoal(const varmes& mv);
 
 	virtual void handleOutComms();
 	std::string prepareMesNextPos() const;

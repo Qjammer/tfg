@@ -20,38 +20,34 @@ void pathfTest(){
 	SrvSocket ss(tsock);
 	Pathf pf("controller.sock");
 	pf.clis.emplace_back(tsock);
-	std::string msg1=ss.prepareMessage(modStr<MOD_TYPE::STATE>(),"ps",1.2,1.2,1.2);
-	std::string msg2=ss.prepareMessage(modStr<MOD_TYPE::ENVREC>(),"nw",0,0,1.0);
-	std::string msg3=ss.prepareMessage(modStr<MOD_TYPE::ENVREC>(),"nw",1,1,4.0);
-	std::string msg4=ss.prepareMessage(modStr<MOD_TYPE::ENVREC>(),"nw",2,2,1.0);
+	std::string msgp1=ss.prepareMessage(modStr<MOD_TYPE::STATE>(),"ps",-1.2,-0.2,1.2);
+	std::string msgs1=ss.prepareMessage(modStr<MOD_TYPE::SUPER>(),"ng",2,2);
+	std::string msgw1=ss.prepareMessage(modStr<MOD_TYPE::ENVREC>(),"nw",0,0,1.0);
+	std::string msgw2=ss.prepareMessage(modStr<MOD_TYPE::ENVREC>(),"nw",1,1,4.0);
+	std::string msgw3=ss.prepareMessage(modStr<MOD_TYPE::ENVREC>(),"nw",2,2,1.0);
 	ss.acceptsAll();
-	ss.sendsToAll(msg1);
-	ss.sendsToAll(msg2);
-	ss.sendsToAll(msg3);
-	ss.sendsToAll(msg4);
+	ss.sendsToAll(msgp1);
+	ss.sendsToAll(msgs1);
+	ss.sendsToAll(msgw1);
+	//ss.sendsToAll(msgw2);
+	ss.sendsToAll(msgw3);
 
-	std::cout<<"size:"<<pf.nmap.size()<<std::endl;
 	pf.handleInComms();
-	std::cout<<"size:"<<pf.nmap.size()<<std::endl;
 	for(auto i:pf.nmap){
-		std::cout<<"key:"<<i.first.first<<":"<<i.first.second<<std::endl;
-		std::cout<<"w:"<<i.second.w<<std::endl;
-		std::cout<<"c:"<<i.second.pos<<std::endl;
+		std::cout<<"key:"<<i.first.first<<","<<i.first.second<<"  \tw:"<<i.second.w<<std::endl;
 	}
-	pf.curNode=key{0,0};
-	pf.goal=key{2,2};
-	pf.insertNewNode(pf.goal);
-	pf.insertNewNode(pf.curNode);
-	dNode& goal=pf.nmap.find(pf.goal)->second;
-	goal.rhs=0;
-	pf.openQueue.emplace(goal.calcdKey(pf.nmap.find(pf.curNode)->second.pos),pf.goal);
-	pf.computeShortestPath();
+	std::cout<<"Current Node: "<<pf.curNode.first<<","<<pf.curNode.second<<std::endl;
+
+	pf.process();
+	ss.sendsToAll(msgw2);
+	pf.handleInComms();
+	pf.process();
+
 	std::cout<<"Number of nodes: "<<pf.nmap.size()<<std::endl;
 	for(auto i:pf.nmap){
 		std::cout<<"key: "<<i.first.first<<","<<i.first.second<<"\tg: "<<i.second.g<<"\trhs: "<<i.second.rhs<<std::endl;
 	}
 	//std::cout<<"Open Queue Remaining Size:"<<pf.openQueue.size()<<std::endl;
-
 }
 
 /*
