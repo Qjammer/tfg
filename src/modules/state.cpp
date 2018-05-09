@@ -58,14 +58,45 @@ void State::handleOutComms(){
 	this->srvs.sendsToAll(msgpos);
 }
 
-void predict(){
+void State::calcFk(){
 
+}
+
+void State::calcHk(){
 
 }
 
-void update(){
+void State::assemblezk(){
+	this->zk.segment<3>(0)=this->accel;
+	this->zk.segment<3>(3)=this->gyro;
+	
 
 }
+void State::disassemblexk(){
+	this->pos=this->xk.segment<3>(0);
+	this->vel=this->xk.segment<3>(3);
+	this->ori.w()=this->xk(6);
+	this->ori.vec()=this->xk.segment<3>(7);
+	this->rotvel=this->xk.segment<3>(10);
+}
+
+void State::predict(){
+	this->calcFk();
+
+	this->xk=this->Fk*this->xk;
+	this->Pk=this->Fk*this->Pk*this->Fk.transpose();
+}
+
+void State::update(){
+	this->calcHk();
+
+	this->yk=this->zk-this->Hk*this->xk;
+	this->Sk=this->Rk+this->Hk*this->Pk*this->Hk.transpose();
+	this->Kk=this->Pk*this->Hk.transpose()*this->Sk.inverse();
+	this->xk=this->xk+this->Kk*this->yk;
+	this->Pk=(Eigen::Matrix<double,STATE_N,STATE_N>::Identity()-this->Kk*this->Hk)*this->Pk;
+}
+
 void State::process(){
 
 }
