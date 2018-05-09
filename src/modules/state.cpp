@@ -58,6 +58,14 @@ void State::handleOutComms(){
 	this->srvs.sendsToAll(msgpos);
 }
 
+void predict(){
+
+
+}
+
+void update(){
+
+}
 void State::process(){
 
 }

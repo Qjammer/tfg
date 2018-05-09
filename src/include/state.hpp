@@ -10,6 +10,8 @@ public:
 	Eigen::Vector3d accel;
 	Eigen::Vector3d gyro;
 	Eigen::Vector4d tacho;
+	std::chrono::high_resolution_clock::time_point tprev;
+
 
 	Eigen::Vector3d pos=Eigen::Vector3d::Zero();
 	Eigen::Quaterniond ori=Eigen::Quaterniond::Identity();
@@ -24,5 +26,7 @@ public:
 	std::string prepareMesOri();
 	std::string prepareMesPos();
 
+	void predict();
+	void update();
 	virtual void process();
 };
