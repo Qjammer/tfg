@@ -65,7 +65,7 @@ public:
 		}
 	}
 
-	virtual void handleVarMessage(varmes& mv)=0;
+	virtual void handleVarMessage(const varmes& mv)=0;
 	virtual void process()=0;
 	virtual void handleOutComms()=0;
 

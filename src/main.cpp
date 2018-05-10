@@ -1,20 +1,44 @@
 #include<iostream>
 #include"Socket.hpp"
-#include"pathf.hpp"
+#include"state.hpp"
 
 //void mapTest();
 //void envrecTest();
 //void contrTest();
-void pathfTest();
+//void pathfTest();
+void stateTest();
 
 int main(){
-	pathfTest();
+	stateTest();
+	//pathfTest();
 	//contrTest();
 	//envrecTest();
 	//mapTest();
 	return 0;
 }
+void stateTest(){
+	std::string tsock="testsock.sock";
+	SrvSocket ss(tsock);
+	State st("state.sock");
+	st.clis.emplace_back(tsock);
+	st.tprev=std::chrono::high_resolution_clock::now();
+	st.dt=std::chrono::milliseconds(100);
+	st.rotvel<<0.0,0.0,0.0;
+	double angle=0.1*M_PI;
+	st.ori=Eigen::Quaterniond(cos(angle/2),0,0,sin(angle/2));
+	
+	//st.calcFk();
+	st.assemblexk();
+	std::cout<<st.xk<<std::endl;
+	st.predict();
+	std::cout<<st.xk<<std::endl;
+	st.disassemblexk();
+	std::cout<<st.ori.vec()<<std::endl;
+	st.calcHk();
+	std::cout<<st.Hk<<std::endl;
+}
 
+/*
 void pathfTest(){
 	std::string tsock="testsock.sock";
 	SrvSocket ss(tsock);
@@ -49,7 +73,7 @@ void pathfTest(){
 	}
 	//std::cout<<"Open Queue Remaining Size:"<<pf.openQueue.size()<<std::endl;
 }
-
+*/
 /*
 void contrTest(){
 	std::string tsock="testsock.sock";

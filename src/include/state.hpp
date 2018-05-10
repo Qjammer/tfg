@@ -6,16 +6,24 @@
 #include"Module.hpp"
 #include"Socket.hpp"
 
-#define STATE_N 13
-#define SENSOR_N 6
 
 
 class State:public Module{
 public:
-	Eigen::Vector3d accel;
+	#define SENSOR_N 6
+	Eigen::Vector3d accelSens;
 	Eigen::Vector3d gyro;
 	Eigen::Vector4d tacho;
 	std::chrono::high_resolution_clock::time_point tprev;
+	std::chrono::high_resolution_clock::duration dt;
+
+	void updateT();
+	#define STATE_N 16
+	Eigen::Vector3d pos=Eigen::Vector3d::Zero();
+	Eigen::Vector3d vel=Eigen::Vector3d::Zero();
+	Eigen::Vector3d accelState=Eigen::Vector3d::Zero();
+	Eigen::Quaterniond ori=Eigen::Quaterniond::Identity();
+	Eigen::Vector3d rotvel=Eigen::Vector3d::Zero();
 
 	Eigen::Matrix<double,STATE_N,1> xk;//State estimate
 	Eigen::Matrix<double,SENSOR_N,1> zk;//Sensor data
@@ -32,10 +40,6 @@ public:
 	Eigen::Matrix<double,STATE_N,SENSOR_N> Kk;//Kalman Gain
 
 
-	Eigen::Vector3d pos=Eigen::Vector3d::Zero();
-	Eigen::Vector3d vel=Eigen::Vector3d::Zero();
-	Eigen::Quaterniond ori=Eigen::Quaterniond::Identity();
-	Eigen::Vector3d rotvel=Eigen::Vector3d::Zero();
 	State(const std::string& srvaddr);
 
 	void handleVarMessage(const varmes& mv);
@@ -47,9 +51,13 @@ public:
 	std::string prepareMesOri();
 	std::string prepareMesPos();
 
-	void assemblezk();
+	void assemblexk();
 	void disassemblexk();
+	void assemblezk();
 	void calcFk();
+
+	Eigen::Matrix<double,3,STATE_N> JaccelSens();
+	Eigen::Matrix<double,3,STATE_N> JrotvelSens();
 	void calcHk();
 
 	void predict();
