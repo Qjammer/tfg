@@ -1,3 +1,4 @@
+#include<eigen3/unsupported/Eigen/CXX11/Tensor>
 #include"state.hpp"
 
 Eigen::Matrix3d skewSym(Eigen::Vector3d& v){
@@ -104,9 +105,11 @@ void State::calcFk(){
 		zeros3m,            zeros34,           id3;
 
 	this->Fk<<linSubmatrix,rotSubmatrix;
-	std::cout<<this->Fk<<std::endl;
+	//std::cout<<this->Fk<<std::endl;
 
 }
+
+template<typename T> struct TD;
 
 Eigen::Matrix<double,3,STATE_N> State::JaccelSens(){
 
@@ -114,34 +117,33 @@ Eigen::Matrix<double,3,STATE_N> State::JaccelSens(){
 	Eigen::Matrix3d Jax=zeros3;
 
 	Eigen::Quaterniond& q=this->ori;
-	double& q0=q.w();
-	Eigen::Vector3d qv=q.vec();
-	Eigen::Matrix3d A=2*qv*qv.transpose();//Outer product
-	Eigen::Matrix3d B=(q0-qv.norm())*Eigen::Matrix3d::Identity();
-	Eigen::Matrix3d C;
-	Eigen::Matrix3d ssmq=skewSym(qv);
+	Eigen::Matrix3d Rq=q.toRotationMatrix();
+	Eigen::Matrix3d Jaa=Rq;
 
-	C=2*q0*ssmq;
 
-	Eigen::Matrix3d M1=A+B+C;
+	Eigen::Matrix3d Jav=Rq*skewSym(this->rotvel);
+	Eigen::Matrix3d Jaw=-Rq*skewSym(this->vel);
 
-	Eigen::Matrix3d Jaa=M1;
-
-	Eigen::Vector3d& rv=this->rotvel;
-	Eigen::Matrix3d rotvelSkew=skewSym(rv);
-
-	Eigen::Matrix3d Jav=M1*rotvelSkew;
-	Eigen::Matrix3d Jaw=M1*skewSym(this->vel).transpose();
-
-	Eigen::Matrix<double,3,4> Jquaternion;
 	Eigen::Vector3d v=this->accelState+this->rotvel.cross(this->vel)+Eigen::Vector3d(0,0,-9.81);
-	Eigen::Matrix3d ssmv=skewSym(v);
+	Eigen::Quaterniond vq={0,v.x(),v.y(),v.z()};
 	
-	Eigen::Vector3d Jqa=2*(q0*Eigen::Matrix3d::Identity()+ssmq)*qv;
-	Eigen::Matrix3d Jqv=2*(qv*v.transpose()-v*qv.transpose()+v.transpose()*qv*Eigen::Matrix3d::Identity()-q0*ssmv);
+	const Eigen::Matrix<Eigen::Quaterniond,1,4> qbasis={{1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1}};
+	//const Eigen::Matrix<Eigen::Quaterniond,4,1> qbasisinv={{1,0,0,0},{0,-1,0,0},{0,0,-1,0},{0,0,0,-1}};
+	const Eigen::Matrix<Eigen::Quaterniond,1,4> qbasisinv=qbasis.unaryExpr([](auto&i){return i.inverse();});
+//	auto vec=[](auto i){return i.vec();};
+	Eigen::Matrix<double,3,4> Jaq=Eigen::Matrix<double,3,4>::Zero();
+	Eigen::Matrix<Eigen::Quaterniond,1,4> aq1=(qbasis*vq*q.inverse());
+	Eigen::Matrix<Eigen::Quaterniond,1,4> aq2=(q*vq*qbasisinv);
+	Eigen::Quaterniond am=q*vq*q.inverse();
+	Eigen::Vector4d qcoef=q.coeffs();
+
+	for(int i=0;i<4;++i){
+		Jaq.col(i)=aq1[i].vec()+(aq2[i].vec()-2*am.vec()*qcoef[i])/(std::pow(q.norm(),2));
+	}
+	std::cout<<Jaq<<std::endl;
 
 	Eigen::Matrix<double,3,STATE_N> Ja;
-	Ja<<Jax,Jav,Jaa,Jqa,Jqv,Jaw;
+	Ja<<Jax,Jav,Jaa,Jaq,Jaw;
 	return Ja;
 }
 

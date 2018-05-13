@@ -24,18 +24,20 @@ void stateTest(){
 	st.tprev=std::chrono::high_resolution_clock::now();
 	st.dt=std::chrono::milliseconds(100);
 	st.rotvel<<0.0,0.0,0.0;
-	double angle=0.1*M_PI;
+	double angle=0.0*M_PI;
 	st.ori=Eigen::Quaterniond(cos(angle/2),0,0,sin(angle/2));
 	
 	//st.calcFk();
 	st.assemblexk();
-	std::cout<<st.xk<<std::endl;
+//	std::cout<<st.xk<<std::endl;
 	st.predict();
-	std::cout<<st.xk<<std::endl;
+//	std::cout<<st.xk<<std::endl;
 	st.disassemblexk();
-	std::cout<<st.ori.vec()<<std::endl;
-	st.calcHk();
-	std::cout<<st.Hk<<std::endl;
+	//std::cout<<st.ori.vec()<<std::endl;
+	st.JaccelSens();
+	//std::cout<<st.JaccelSens()<<std::endl;
+	//st.calcHk();
+	//std::cout<<st.Hk<<std::endl;
 }
 
 /*
