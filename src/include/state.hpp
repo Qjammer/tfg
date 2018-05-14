@@ -56,6 +56,7 @@ public:
 	void assemblezk();
 	void calcFk();
 
+	Eigen::Matrix<double,3,4> Jquatrotate(const Eigen::Quaterniond& q, const Eigen::Vector3d& v);
 	Eigen::Matrix<double,3,STATE_N> JaccelSens();
 	Eigen::Matrix<double,3,STATE_N> JrotvelSens();
 	void calcHk();

@@ -111,44 +111,63 @@ void State::calcFk(){
 
 template<typename T> struct TD;
 
-Eigen::Matrix<double,3,STATE_N> State::JaccelSens(){
+Eigen::Matrix<double,3,4> State::Jquatrotate(const Eigen::Quaterniond& q,const Eigen::Vector3d& v){
 
-	const Eigen::Matrix3d zeros3=Eigen::Matrix3d::Zero();
-	Eigen::Matrix3d Jax=zeros3;
-
-	Eigen::Quaterniond& q=this->ori;
-	Eigen::Matrix3d Rq=q.toRotationMatrix();
-	Eigen::Matrix3d Jaa=Rq;
-
-
-	Eigen::Matrix3d Jav=Rq*skewSym(this->rotvel);
-	Eigen::Matrix3d Jaw=-Rq*skewSym(this->vel);
-
-	Eigen::Vector3d v=this->accelState+this->rotvel.cross(this->vel)+Eigen::Vector3d(0,0,-9.81);
 	Eigen::Quaterniond vq={0,v.x(),v.y(),v.z()};
-	
 	const Eigen::Matrix<Eigen::Quaterniond,1,4> qbasis={{1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1}};
-	//const Eigen::Matrix<Eigen::Quaterniond,4,1> qbasisinv={{1,0,0,0},{0,-1,0,0},{0,0,-1,0},{0,0,0,-1}};
-	const Eigen::Matrix<Eigen::Quaterniond,1,4> qbasisinv=qbasis.unaryExpr([](auto&i){return i.inverse();});
-//	auto vec=[](auto i){return i.vec();};
-	Eigen::Matrix<double,3,4> Jaq=Eigen::Matrix<double,3,4>::Zero();
+	const Eigen::Matrix<Eigen::Quaterniond,1,4> qbasisinv=qbasis.unaryExpr([](auto&i){return i.conjugate();});
+
 	Eigen::Matrix<Eigen::Quaterniond,1,4> aq1=(qbasis*vq*q.inverse());
 	Eigen::Matrix<Eigen::Quaterniond,1,4> aq2=(q*vq*qbasisinv);
 	Eigen::Quaterniond am=q*vq*q.inverse();
 	Eigen::Vector4d qcoef=q.coeffs();
 
+	Eigen::Matrix<double,3,4> J=Eigen::Matrix<double,3,4>::Zero();
 	for(int i=0;i<4;++i){
-		Jaq.col(i)=aq1[i].vec()+(aq2[i].vec()-2*am.vec()*qcoef[i])/(std::pow(q.norm(),2));
+		J.col(i)=aq1[i].vec()+(aq2[i].vec()-2*am.vec()*qcoef[i])/(std::pow(q.norm(),2));
 	}
-	std::cout<<Jaq<<std::endl;
+
+	return J;
+
+}
+
+Eigen::Matrix<double,3,STATE_N> State::JaccelSens(){
+
+	Eigen::Matrix3d zeros3=Eigen::Matrix3d::Zero();
+	Eigen::Matrix3d& Jax=zeros3;
+
+	const Eigen::Quaterniond& q=this->ori;
+	Eigen::Matrix3d Rq=q.toRotationMatrix();
+	Eigen::Matrix3d& Jaa=Rq;
+
+	Eigen::Matrix3d Jav=Rq*skewSym(this->rotvel);
+
+	Eigen::Vector3d v=this->accelState+this->rotvel.cross(this->vel)+Eigen::Vector3d(0,0,-9.81);
+	Eigen::Matrix<double,3,4> Jaq=this->Jquatrotate(q,v);
+
+	Eigen::Matrix3d Jaw=-Rq*skewSym(this->vel);
 
 	Eigen::Matrix<double,3,STATE_N> Ja;
 	Ja<<Jax,Jav,Jaa,Jaq,Jaw;
 	return Ja;
 }
 
+
+
 Eigen::Matrix<double,3,STATE_N> State::JrotvelSens(){
-	return Eigen::Matrix<double,3,STATE_N>::Zero();
+	Eigen::Matrix3d zeros3=Eigen::Matrix3d::Zero();
+	Eigen::Matrix3d& Jwx=zeros3;
+	Eigen::Matrix3d& Jwv=zeros3;
+	Eigen::Matrix3d& Jwa=zeros3;
+
+	const Eigen::Quaterniond& q=this->ori;
+	Eigen::Matrix<double,3,4> Jwq=this->Jquatrotate(q,this->rotvel);
+
+	Eigen::Matrix3d Jww=q.toRotationMatrix();
+
+	Eigen::Matrix<double,3,STATE_N> Jw;
+	Jw<<Jwx,Jwv,Jwa,Jwq,Jww;
+	return Jw;
 
 }
 
