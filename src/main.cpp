@@ -22,22 +22,34 @@ void stateTest(){
 	State st("state.sock");
 	st.clis.emplace_back(tsock);
 	st.tprev=std::chrono::high_resolution_clock::now();
-	st.dt=std::chrono::milliseconds(100);
-	st.rotvel<<0.0,0.0,0.0;
+	st.dt=std::chrono::milliseconds(10);
+	st.rotvel<<0.0,0.0,1.0;
+	st.gyro<<0.0,0.0,1.0;
 	double angle=0.0*M_PI;
 	st.ori=Eigen::Quaterniond(cos(angle/2),0,0,sin(angle/2));
-	
-	//st.calcFk();
-	st.assemblexk();
-//	std::cout<<st.xk<<std::endl;
-	st.predict();
-//	std::cout<<st.xk<<std::endl;
-	st.disassemblexk();
-	//std::cout<<st.ori.vec()<<std::endl;
-	st.JaccelSens();
-	//std::cout<<st.JaccelSens()<<std::endl;
-	//st.calcHk();
-	//std::cout<<st.Hk<<std::endl;
+	st.Pk=0.1*Eigen::Matrix<double,STATE_N,STATE_N>::Identity();
+	st.Rk=0.1*Eigen::Matrix<double,SENSOR_N,SENSOR_N>::Identity();
+	st.accelSens<<0,0,-9.81;
+	int i=0;
+	std::chrono::high_resolution_clock::time_point begin=std::chrono::high_resolution_clock::now();
+	std::chrono::high_resolution_clock::time_point now=begin;
+	double dts=std::chrono::duration_cast<std::chrono::duration<double>>(now-begin).count();
+
+	do{
+		if(++i%100==0){std::cout<<i<<std::endl;}
+		st.process();
+		now=std::chrono::high_resolution_clock::now();
+		dts=std::chrono::duration_cast<std::chrono::duration<double>>(now-begin).count();
+	}while(dts<5.0);
+
+	std::cout<<"xk"<<std::endl<<st.xk<<std::endl<<std::endl;
+	std::cout<<"Fk"<<std::endl<<st.Fk<<std::endl<<std::endl;
+	std::cout<<"Pk"<<std::endl<<st.Pk<<std::endl<<std::endl;
+	std::cout<<"zk"<<std::endl<<st.zk<<std::endl<<std::endl;
+	std::cout<<"Hk"<<std::endl<<st.Hk<<std::endl<<std::endl;
+	std::cout<<"Sk"<<std::endl<<st.Sk<<std::endl<<std::endl;
+	std::cout<<"Kk"<<std::endl<<st.Kk<<std::endl<<std::endl;
+	std::cout<<"Loops:"<<i<<std::endl<<std::endl;
 }
 
 /*

@@ -52,10 +52,12 @@ public:
 	std::string prepareMesPos();
 
 	void assemblexk();
+	Eigen::Matrix<double,STATE_N,1> expectedxk();
 	void disassemblexk();
-	void assemblezk();
 	void calcFk();
 
+	void assemblezk();
+	Eigen::Matrix<double,SENSOR_N,1> expectedzk();
 	Eigen::Matrix<double,3,4> Jquatrotate(const Eigen::Quaterniond& q, const Eigen::Vector3d& v);
 	Eigen::Matrix<double,3,STATE_N> JaccelSens();
 	Eigen::Matrix<double,3,STATE_N> JrotvelSens();

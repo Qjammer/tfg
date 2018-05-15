@@ -105,7 +105,6 @@ void State::calcFk(){
 		zeros3m,            zeros34,           id3;
 
 	this->Fk<<linSubmatrix,rotSubmatrix;
-	//std::cout<<this->Fk<<std::endl;
 
 }
 
@@ -117,16 +116,16 @@ Eigen::Matrix<double,3,4> State::Jquatrotate(const Eigen::Quaterniond& q,const E
 	const Eigen::Matrix<Eigen::Quaterniond,1,4> qbasis={{1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1}};
 	const Eigen::Matrix<Eigen::Quaterniond,1,4> qbasisinv=qbasis.unaryExpr([](auto&i){return i.conjugate();});
 
-	Eigen::Matrix<Eigen::Quaterniond,1,4> aq1=(qbasis*vq*q.inverse());
-	Eigen::Matrix<Eigen::Quaterniond,1,4> aq2=(q*vq*qbasisinv);
+	Eigen::Matrix<Eigen::Quaterniond,1,4> aq1=qbasis*vq*q.inverse();
+	Eigen::Matrix<Eigen::Quaterniond,1,4> aq2=q*vq*qbasisinv;
 	Eigen::Quaterniond am=q*vq*q.inverse();
-	Eigen::Vector4d qcoef=q.coeffs();
+	//Eigen::Vector4d qcoef=q.coeffs();//Wrong way around: x,y,z,w
+	Eigen::Vector4d qcoef(q.w(),q.vec().x(),q.vec().y(),q.vec().z());
 
 	Eigen::Matrix<double,3,4> J=Eigen::Matrix<double,3,4>::Zero();
 	for(int i=0;i<4;++i){
 		J.col(i)=aq1[i].vec()+(aq2[i].vec()-2*am.vec()*qcoef[i])/(std::pow(q.norm(),2));
 	}
-
 	return J;
 
 }
@@ -144,7 +143,6 @@ Eigen::Matrix<double,3,STATE_N> State::JaccelSens(){
 
 	Eigen::Vector3d v=this->accelState+this->rotvel.cross(this->vel)+Eigen::Vector3d(0,0,-9.81);
 	Eigen::Matrix<double,3,4> Jaq=this->Jquatrotate(q,v);
-
 	Eigen::Matrix3d Jaw=-Rq*skewSym(this->vel);
 
 	Eigen::Matrix<double,3,STATE_N> Ja;
@@ -177,9 +175,6 @@ void State::calcHk(){
 	Eigen::Matrix<double,3,STATE_N> rotvelSensMat=this->JrotvelSens();
 
 	this->Hk<<accelSensMat,rotvelSensMat;
-
-
-
 }
 
 void State::updateT(){
@@ -204,6 +199,28 @@ void State::assemblexk(){
 	this->xk.segment<3>(13)=this->rotvel;
 
 }
+
+Eigen::Matrix<double,STATE_N,1> State::expectedxk(){
+	double dts=std::chrono::duration_cast<std::chrono::duration<double>>(this->dt).count();
+	Eigen::Vector3d xkx=this->pos+dts*this->vel+0.5*dts*dts*this->accelState;
+	Eigen::Vector3d xkv=this->vel+dts*this->accelState;
+	Eigen::Vector3d xka=this->accelState;
+
+	Eigen::Quaterniond xkq1=this->ori;
+	Eigen::Quaterniond wq;
+	wq.w()=0;wq.vec()=this->rotvel;
+	Eigen::Quaterniond xkq2=wq*this->ori;
+	Eigen::Quaterniond xkq;
+	xkq.coeffs()=xkq1.coeffs()+0.5*dts*xkq2.coeffs();
+	xkq.normalize();
+
+	Eigen::Vector3d xkw=this->rotvel;
+
+	Eigen::Matrix<double,STATE_N,1> zkexp;
+	zkexp<<xkx,xkv,xka,xkq.w(),xkq.vec(),xkw;
+	return zkexp;
+}
+
 void State::disassemblexk(){
 	this->pos=this->xk.segment<3>(0);
 	this->vel=this->xk.segment<3>(3);
@@ -214,23 +231,51 @@ void State::disassemblexk(){
 	this->rotvel=this->xk.segment<3>(13);
 }
 
-void State::predict(){
-	this->calcFk();
+Eigen::Matrix<double,SENSOR_N,1> State::expectedzk(){
+	Eigen::Quaterniond& q=this->ori;
+	Eigen::Vector3d f=this->accelState+this->rotvel.cross(this->vel)+Eigen::Vector3d(0,0,-9.81);
+	Eigen::Quaterniond fq;
+	fq.w()=0;fq.vec()=f;
+	Eigen::Matrix<double,3,1> amexp=(q*fq*q.inverse()).vec();
 
-	this->xk=this->Fk*this->xk;
-	this->Pk=this->Fk*this->Pk*this->Fk.transpose();
+	Eigen::Quaterniond wq;
+	wq.w()=0;wq.vec()=this->rotvel;
+	Eigen::Matrix<double,3,1> wmexp=(q*wq*q.inverse()).vec();
+
+	Eigen::Matrix<double,SENSOR_N,1> zkexp;
+	zkexp<<amexp,wmexp;
+	return zkexp;
+}
+
+void State::predict(){
+	this->calcFk();//TODO:Check if Fk has to be calculated at x=k-1 or x=k
+
+	this->xk=this->expectedxk();
+	this->Pk=(this->Fk*this->Pk*this->Fk.transpose()).eval();
 }
 
 void State::update(){
 	this->calcHk();
 
-	this->yk=this->zk-this->Hk*this->xk;
+	this->yk=this->zk-this->expectedzk();
 	this->Sk=this->Rk+this->Hk*this->Pk*this->Hk.transpose();
 	this->Kk=this->Pk*this->Hk.transpose()*this->Sk.inverse();
+
 	this->xk=this->xk+this->Kk*this->yk;
 	this->Pk=(Eigen::Matrix<double,STATE_N,STATE_N>::Identity()-this->Kk*this->Hk)*this->Pk;
 }
 
 void State::process(){
+	this->updateT();
+
+	this->assemblexk();
+	this->predict();
+	this->disassemblexk();
+
+	this->assemblexk();
+	this->assemblezk();
+	this->update();
+	this->disassemblexk();
 
 }
+
