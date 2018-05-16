@@ -101,7 +101,7 @@ void State::calcFk(){
 	Quat<<-qv.transpose(),q0*id3+skewSym(qv);
 
 	rotSubmatrix<<
-		zeros4m, id4+0.25*dts*Omega, 0.25*dts*Quat,
+		zeros4m, id4+0.5*dts*Omega, 0.5*dts*Quat,
 		zeros3m,            zeros34,           id3;
 
 	this->Fk<<linSubmatrix,rotSubmatrix;
@@ -139,11 +139,14 @@ Eigen::Matrix<double,3,STATE_N> State::JaccelSens(){
 	Eigen::Matrix3d Rq=q.toRotationMatrix();
 	Eigen::Matrix3d& Jaa=Rq;
 
-	Eigen::Matrix3d Jav=Rq*skewSym(this->rotvel);
+	//Eigen::Matrix3d Jav=Rq*skewSym(this->rotvel);
+	Eigen::Matrix3d& Jav=zeros3;
 
-	Eigen::Vector3d v=this->accelState+this->rotvel.cross(this->vel)+Eigen::Vector3d(0,0,-9.81);
+	//Eigen::Vector3d v=this->accelState+this->rotvel.cross(this->vel)+Eigen::Vector3d(0,0,-9.81);
+	Eigen::Vector3d v=this->accelState+Eigen::Vector3d(0,0,9.81);
 	Eigen::Matrix<double,3,4> Jaq=this->Jquatrotate(q,v);
-	Eigen::Matrix3d Jaw=-Rq*skewSym(this->vel);
+	//Eigen::Matrix3d Jaw=-Rq*skewSym(this->vel);
+	Eigen::Matrix3d& Jaw=zeros3;
 
 	Eigen::Matrix<double,3,STATE_N> Ja;
 	Ja<<Jax,Jav,Jaa,Jaq,Jaw;
@@ -233,7 +236,8 @@ void State::disassemblexk(){
 
 Eigen::Matrix<double,SENSOR_N,1> State::expectedzk(){
 	Eigen::Quaterniond& q=this->ori;
-	Eigen::Vector3d f=this->accelState+this->rotvel.cross(this->vel)+Eigen::Vector3d(0,0,-9.81);
+	//Eigen::Vector3d f=this->accelState+this->rotvel.cross(this->vel)+Eigen::Vector3d(0,0,-9.81);
+	Eigen::Vector3d f=this->accelState+Eigen::Vector3d(0,0,9.81);
 	Eigen::Quaterniond fq;
 	fq.w()=0;fq.vec()=f;
 	Eigen::Matrix<double,3,1> amexp=(q*fq*q.inverse()).vec();
