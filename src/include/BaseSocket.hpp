@@ -30,7 +30,7 @@ static constexpr char typeChar(){
 	std::is_same<T,float>::value?'f':
 	std::is_same<T,double>::value?'g':
 	'z';
-	};
+	}
 
 //static char typeChars[]={'a', 'b', 'c', 'd', 'e', 'f', 'g'};
 typedef std::pair<char,std::variant<ALLOWED_TYPES>> myvari;

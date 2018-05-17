@@ -68,43 +68,99 @@ void State::handleOutComms(){
 	this->srvs.sendsToAll(msgpos);
 }
 
-void State::calcFk(){
+Eigen::Matrix<double,3,STATE_N> State::Jx(){
+	double dts=this->dts;
+	auto id3=Eigen::Matrix3d::Identity();
+	Eigen::Matrix<double,3,STATE_N> Jx;
+	Jx<<id3,dts*id3,0.5*dts*dts*id3,Eigen::Matrix<double,3,STATE_N-9>::Zero();
+	return Jx;
+}
 
+Eigen::Matrix<double,3,STATE_N> State::Jv(){
+	double dts=this->dts;
+	auto id3=Eigen::Matrix3d::Identity();
+	auto zeros3=Eigen::Matrix3d::Zero();
+
+	Eigen::Matrix<double,3,STATE_N> Jv;
+	Jv<<zeros3,id3,dts*id3,Eigen::Matrix<double,3,STATE_N-9>::Zero();
+	return Jv;
+}
+
+Eigen::Matrix<double,3,STATE_N> State::Ja(){
+	auto id3=Eigen::Matrix3d::Identity();
+	auto zeros3=Eigen::Matrix3d::Zero();
+
+	Eigen::Matrix<double,3,STATE_N> Ja;
+	Ja<<zeros3,zeros3,id3,Eigen::Matrix<double,3,STATE_N-9>::Zero();
+	return Ja;
+}
+
+Eigen::Matrix<double,9,STATE_N> State::linFk(){
 	Eigen::Matrix<double,9,STATE_N> linSubmatrix;
-
-	const Eigen::Matrix3d id3=Eigen::Matrix3d::Identity();
-	const Eigen::Matrix3d zeros3=Eigen::Matrix3d::Zero();
-	const Eigen::Matrix<double,3,STATE_N-9> zeros3n=Eigen::Matrix<double,3,STATE_N-9>::Zero();
-	double dts=std::chrono::duration_cast<std::chrono::duration<double>>(this->dt).count();
-
 	linSubmatrix<<
-		   id3, id3*dts, id3*0.5*dts*dts, zeros3n,
-		zeros3,     id3,         id3*dts, zeros3n,
-		zeros3,  zeros3,             id3, zeros3n;
+		this->Jx(),
+		this->Jv(),
+		this->Ja();
+	return linSubmatrix;
+}
 
-	Eigen::Matrix<double,7,STATE_N> rotSubmatrix;
+Eigen::Matrix<double,4,STATE_N> State::Jq(){
+	double dts=this->dts;
+
 	const Eigen::Matrix<double,4,STATE_N-7> zeros4m=Eigen::Matrix<double,4,STATE_N-7>::Zero();
-	const Eigen::Matrix<double,3,STATE_N-7> zeros3m=Eigen::Matrix<double,3,STATE_N-7>::Zero();
-	const Eigen::Matrix<double,3,4> zeros34=Eigen::Matrix<double,3,4>::Zero();
-	const Eigen::Matrix4d id4=Eigen::Matrix4d::Identity();
 
-	Eigen::Vector3d& rv=this->rotvel;
-	Eigen::Matrix4d Omega;
-	Omega.row(0)<<0,-rv.transpose();
-	Omega.col(0)<<0,rv;
-	Omega.bottomRightCorner<3,3>()<<-skewSym(rv);
+	const Eigen::Quaterniond& q=this->ori;
+	const Eigen::Vector3d& w=this->rotvel;
+	Eigen::Quaterniond wqdt;
+	wqdt.w()=1-std::pow(this->rotvel.norm()*dts/2,2)/2;
+	wqdt.vec()=this->rotvel*dts/2;
+	
+	const Eigen::Matrix<Eigen::Quaterniond,1,4> qbasis={{1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1}};
+	Eigen::Matrix<Eigen::Quaterniond,1,4> Jqqq;
+	Jqqq=wqdt*qbasis;
+	Eigen::Matrix<double,4,4> Jqq;
 
-	Eigen::Matrix<double,4,3> Quat;
-	double q0=this->ori.w();
-	Eigen::Vector3d qv=this->ori.vec();
+	for(int i=0;i<4;i++){
+		Jqq.col(i)<<Jqqq[i].w(),Jqqq[i].vec();
+	}
+	
+	Eigen::Matrix<double,4,3> Jqw;
+	for(int i=0;i<3;i++){
+		Eigen::Quaterniond dwq;
+		dwq.w()=-w[i]*dts*dts/4;
+		dwq.vec()=Eigen::Vector3d::Zero();
+		dwq.vec()[i]=dts/2;
+		Eigen::Quaterniond rs=dwq*q;
+		Jqw.col(i)<<rs.w(),rs.vec();
+	}
 
-	Quat<<-qv.transpose(),q0*id3+skewSym(qv);
+	Eigen::Matrix<double,4,STATE_N> Jq;
+	Jq<<zeros4m, Jqq, Jqw;
+	return Jq;
 
-	rotSubmatrix<<
-		zeros4m, id4+0.5*dts*Omega, 0.5*dts*Quat,
-		zeros3m,            zeros34,           id3;
+}
 
-	this->Fk<<linSubmatrix,rotSubmatrix;
+Eigen::Matrix<double,3,STATE_N> State::Jw(){
+	auto id3=Eigen::Matrix3d::Identity();
+	auto zeros34=Eigen::Matrix<double,3,4>::Zero();
+
+	Eigen::Matrix<double,3,STATE_N> Jw;
+	Jw<<Eigen::Matrix<double,3,STATE_N-7>::Zero(), zeros34, id3;
+	return Jw;
+}
+
+Eigen::Matrix<double,7,STATE_N> State::rotFk(){
+	Eigen::Matrix<double,7,STATE_N> Jrot;
+	Jrot<<
+		this->Jq(),
+		this->Jw();
+	return Jrot;
+}
+
+void State::calcFk(){
+	Eigen::Matrix<double,9,STATE_N> linFk=this->linFk();
+	Eigen::Matrix<double,7,STATE_N> rotFk=this->rotFk();
+	this->Fk<<linFk,rotFk;
 
 }
 
@@ -131,29 +187,21 @@ Eigen::Matrix<double,3,4> State::Jquatrotate(const Eigen::Quaterniond& q,const E
 }
 
 Eigen::Matrix<double,3,STATE_N> State::JaccelSens(){
-
 	Eigen::Matrix3d zeros3=Eigen::Matrix3d::Zero();
 	Eigen::Matrix3d& Jax=zeros3;
+	Eigen::Matrix3d& Jav=zeros3;
+	Eigen::Matrix3d& Jaw=zeros3;
 
 	const Eigen::Quaterniond& q=this->ori;
-	Eigen::Matrix3d Rq=q.toRotationMatrix();
-	Eigen::Matrix3d& Jaa=Rq;
+	Eigen::Matrix3d Jaa=q.toRotationMatrix();
 
-	//Eigen::Matrix3d Jav=Rq*skewSym(this->rotvel);
-	Eigen::Matrix3d& Jav=zeros3;
-
-	//Eigen::Vector3d v=this->accelState+this->rotvel.cross(this->vel)+Eigen::Vector3d(0,0,-9.81);
 	Eigen::Vector3d v=this->accelState+Eigen::Vector3d(0,0,9.81);
 	Eigen::Matrix<double,3,4> Jaq=this->Jquatrotate(q,v);
-	//Eigen::Matrix3d Jaw=-Rq*skewSym(this->vel);
-	Eigen::Matrix3d& Jaw=zeros3;
 
 	Eigen::Matrix<double,3,STATE_N> Ja;
 	Ja<<Jax,Jav,Jaa,Jaq,Jaw;
 	return Ja;
 }
-
-
 
 Eigen::Matrix<double,3,STATE_N> State::JrotvelSens(){
 	Eigen::Matrix3d zeros3=Eigen::Matrix3d::Zero();
@@ -169,11 +217,9 @@ Eigen::Matrix<double,3,STATE_N> State::JrotvelSens(){
 	Eigen::Matrix<double,3,STATE_N> Jw;
 	Jw<<Jwx,Jwv,Jwa,Jwq,Jww;
 	return Jw;
-
 }
 
 void State::calcHk(){
-
 	Eigen::Matrix<double,3,STATE_N> accelSensMat=this->JaccelSens();
 	Eigen::Matrix<double,3,STATE_N> rotvelSensMat=this->JrotvelSens();
 
@@ -183,14 +229,13 @@ void State::calcHk(){
 void State::updateT(){
 	std::chrono::high_resolution_clock::time_point now=std::chrono::high_resolution_clock::now();
 	this->dt=now-this->tprev;
+	this->dts=std::chrono::duration_cast<std::chrono::duration<double>>(this->dt).count();
 	this->tprev=now;
 }
 
 void State::assemblezk(){
 	this->zk.segment<3>(0)=this->accelSens;
 	this->zk.segment<3>(3)=this->gyro;
-	
-
 }
 
 void State::assemblexk(){
@@ -204,24 +249,23 @@ void State::assemblexk(){
 }
 
 Eigen::Matrix<double,STATE_N,1> State::expectedxk(){
-	double dts=std::chrono::duration_cast<std::chrono::duration<double>>(this->dt).count();
+	double dts=this->dts;
 	Eigen::Vector3d xkx=this->pos+dts*this->vel+0.5*dts*dts*this->accelState;
 	Eigen::Vector3d xkv=this->vel+dts*this->accelState;
 	Eigen::Vector3d xka=this->accelState;
 
-	Eigen::Quaterniond xkq1=this->ori;
-	Eigen::Quaterniond wq;
-	wq.w()=0;wq.vec()=this->rotvel;
-	Eigen::Quaterniond xkq2=wq*this->ori;
 	Eigen::Quaterniond xkq;
-	xkq.coeffs()=xkq1.coeffs()+0.5*dts*xkq2.coeffs();
+	Eigen::Quaterniond wqdt;
+	wqdt.w()=1-std::pow(this->rotvel.norm()*dts/2,2)/2;
+	wqdt.vec()=this->rotvel*dts/2;
+	xkq=wqdt*this->ori;
 	xkq.normalize();
 
 	Eigen::Vector3d xkw=this->rotvel;
 
-	Eigen::Matrix<double,STATE_N,1> zkexp;
-	zkexp<<xkx,xkv,xka,xkq.w(),xkq.vec(),xkw;
-	return zkexp;
+	Eigen::Matrix<double,STATE_N,1> xkexp;
+	xkexp<<xkx,xkv,xka,xkq.w(),xkq.vec(),xkw;
+	return xkexp;
 }
 
 void State::disassemblexk(){
@@ -236,7 +280,7 @@ void State::disassemblexk(){
 
 Eigen::Matrix<double,SENSOR_N,1> State::expectedzk(){
 	Eigen::Quaterniond& q=this->ori;
-	//Eigen::Vector3d f=this->accelState+this->rotvel.cross(this->vel)+Eigen::Vector3d(0,0,-9.81);
+//	Eigen::Vector3d f=this->accelState+this->rotvel.cross(this->vel)+Eigen::Vector3d(0,0,9.81);
 	Eigen::Vector3d f=this->accelState+Eigen::Vector3d(0,0,9.81);
 	Eigen::Quaterniond fq;
 	fq.w()=0;fq.vec()=f;
@@ -266,7 +310,8 @@ void State::update(){
 	this->Kk=this->Pk*this->Hk.transpose()*this->Sk.inverse();
 
 	this->xk=this->xk+this->Kk*this->yk;
-	this->Pk=(Eigen::Matrix<double,STATE_N,STATE_N>::Identity()-this->Kk*this->Hk)*this->Pk;
+	auto IKH=Eigen::Matrix<double,STATE_N,STATE_N>::Identity()-this->Kk*this->Hk;
+	this->Pk=IKH*this->Pk*IKH.transpose()+this->Kk*this->Rk*this->Kk.transpose();
 }
 
 void State::process(){

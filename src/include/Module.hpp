@@ -29,21 +29,27 @@ static const constexpr char* modStr(){
 	i==MOD_TYPE::STATE?"st":
 	i==MOD_TYPE::SUPER?"su":
 	"ER";
-};
+}
 
 #define makeMesVar(type,name,num) type name=std::get<type>(mv.vars[num].second);
 
 template<int I,typename T,typename...V>
-bool varCondRec(const varmes& mv){
-	return mv.vars[I].first==typeChar<T>()&&varCondRec<I+1,V...>(mv);
-}
+struct varCondRec {
+	bool operator()(const varmes& mv){
+		return mv.vars[I].first==typeChar<T>()&&varCondRec<I+1,V...>()(mv);
+	}
+};
 
-template<int I>
-bool varCondRec(const varmes& mv){return true;}
+template<int I,typename T>
+struct varCondRec<I,T>{
+	bool operator()(const varmes& mv){
+		return mv.vars[I].first==typeChar<T>();
+	}
+};
 
 template<typename...V>
 bool varCond(const varmes& mv){
-	return (mv.vars.size()==sizeof...(V))&&varCondRec<0,V...>(mv);
+return (mv.vars.size()==sizeof...(V))&&varCondRec<0,V...>()(mv);
 }
 
 class Module{

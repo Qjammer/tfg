@@ -16,6 +16,7 @@ public:
 	Eigen::Vector4d tacho;
 	std::chrono::high_resolution_clock::time_point tprev;
 	std::chrono::high_resolution_clock::duration dt;
+	double dts;
 
 	void updateT();
 	#define STATE_N 16
@@ -54,6 +55,13 @@ public:
 	void assemblexk();
 	Eigen::Matrix<double,STATE_N,1> expectedxk();
 	void disassemblexk();
+	Eigen::Matrix<double,9,STATE_N> linFk();
+	Eigen::Matrix<double,3,STATE_N> Jx();
+	Eigen::Matrix<double,3,STATE_N> Jv();
+	Eigen::Matrix<double,3,STATE_N> Ja();
+	Eigen::Matrix<double,7,STATE_N> rotFk();
+	Eigen::Matrix<double,4,STATE_N> Jq();
+	Eigen::Matrix<double,3,STATE_N> Jw();
 	void calcFk();
 
 	void assemblezk();

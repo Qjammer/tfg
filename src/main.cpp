@@ -25,23 +25,29 @@ void stateTest(){
 	st.dt=std::chrono::milliseconds(10);
 	st.rotvel<<0.0,0.0,0.1;
 	st.gyro<<0.0,0.0,0.1;
+	st.vel<<0.0,0.0,0.0;
 	st.vel<<0.0,0.1,0.0;
 	double angle=0.0*M_PI;
 	st.ori=Eigen::Quaterniond(cos(angle/2),0,0,sin(angle/2));
 	st.Pk=0.1*Eigen::Matrix<double,STATE_N,STATE_N>::Identity();
-	st.Rk=0.1*Eigen::Matrix<double,SENSOR_N,SENSOR_N>::Identity();
+	st.Rk=0.01*Eigen::Matrix<double,SENSOR_N,SENSOR_N>::Identity();
+	st.accelSens<<0.0,0.0,9.81;
 	st.accelSens<<-0.01,0.0,9.81;
+	st.accelState<<0.0,0.0,0.0;
+	st.accelState<<-0.01,0.0,0.0;
+
 	int i=0;
-	std::chrono::high_resolution_clock::time_point begin=std::chrono::high_resolution_clock::now();
-	std::chrono::high_resolution_clock::time_point now=begin;
+	auto begin=std::chrono::high_resolution_clock::now();
+	auto now=begin;
 	double dts=std::chrono::duration_cast<std::chrono::duration<double>>(now-begin).count();
 	unsigned int max=-1;
+	Eigen::IOFormat fmt(6,Eigen::DontAlignCols,"\t");
 	do{
-		if(++i%1000==0){std::cout<<st.pos.transpose()<<std::endl;}
 		st.process();
+		if(++i%1000==0){std::cout<<dts<<"\t"<<st.pos.transpose().format(fmt)<<std::endl;}
 		now=std::chrono::high_resolution_clock::now();
 		dts=std::chrono::duration_cast<std::chrono::duration<double>>(now-begin).count();
-	}while(dts<5.0&&i<max);
+	}while(dts<20.0&&i<max);
 
 	std::cout<<"xk"<<std::endl<<st.xk<<std::endl<<std::endl;
 	std::cout<<"Fk"<<std::endl<<st.Fk<<std::endl<<std::endl;
