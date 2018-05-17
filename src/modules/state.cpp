@@ -113,11 +113,11 @@ Eigen::Matrix<double,4,STATE_N> State::Jq(){
 	const Eigen::Vector3d& w=this->rotvel;
 	Eigen::Quaterniond wqdt;
 	wqdt.w()=1-std::pow(this->rotvel.norm()*dts/2,2)/2;
-	wqdt.vec()=this->rotvel*dts/2;
+	wqdt.vec()=-this->rotvel*dts/2;
 	
 	const Eigen::Matrix<Eigen::Quaterniond,1,4> qbasis={{1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1}};
 	Eigen::Matrix<Eigen::Quaterniond,1,4> Jqqq;
-	Jqqq=wqdt*qbasis;
+	Jqqq=qbasis*wqdt;
 	Eigen::Matrix<double,4,4> Jqq;
 
 	for(int i=0;i<4;i++){
@@ -129,7 +129,7 @@ Eigen::Matrix<double,4,STATE_N> State::Jq(){
 		Eigen::Quaterniond dwq;
 		dwq.w()=-w[i]*dts*dts/4;
 		dwq.vec()=Eigen::Vector3d::Zero();
-		dwq.vec()[i]=dts/2;
+		dwq.vec()[i]=-dts/2;
 		Eigen::Quaterniond rs=dwq*q;
 		Jqw.col(i)<<rs.w(),rs.vec();
 	}
@@ -254,11 +254,10 @@ Eigen::Matrix<double,STATE_N,1> State::expectedxk(){
 	Eigen::Vector3d xkv=this->vel+dts*this->accelState;
 	Eigen::Vector3d xka=this->accelState;
 
-	Eigen::Quaterniond xkq;
 	Eigen::Quaterniond wqdt;
 	wqdt.w()=1-std::pow(this->rotvel.norm()*dts/2,2)/2;
-	wqdt.vec()=this->rotvel*dts/2;
-	xkq=wqdt*this->ori;
+	wqdt.vec()=-this->rotvel*dts/2;
+	Eigen::Quaterniond xkq=wqdt*this->ori;
 	xkq.normalize();
 
 	Eigen::Vector3d xkw=this->rotvel;
@@ -305,11 +304,11 @@ void State::predict(){
 void State::update(){
 	this->calcHk();
 
-	this->yk=this->zk-this->expectedzk();
-	this->Sk=this->Rk+this->Hk*this->Pk*this->Hk.transpose();
-	this->Kk=this->Pk*this->Hk.transpose()*this->Sk.inverse();
+	auto yk=this->zk-this->expectedzk();
+	auto Sk=this->Rk+this->Hk*this->Pk*this->Hk.transpose();
+	this->Kk=this->Pk*this->Hk.transpose()*Sk.inverse();
 
-	this->xk=this->xk+this->Kk*this->yk;
+	this->xk=this->xk+this->Kk*yk;
 	auto IKH=Eigen::Matrix<double,STATE_N,STATE_N>::Identity()-this->Kk*this->Hk;
 	this->Pk=IKH*this->Pk*IKH.transpose()+this->Kk*this->Rk*this->Kk.transpose();
 }

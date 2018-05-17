@@ -35,9 +35,6 @@ public:
 	Eigen::Matrix<double,SENSOR_N,STATE_N> Hk;//Jacobian of sensor model
 	Eigen::Matrix<double,SENSOR_N,SENSOR_N> Rk;//Covariance of sensor model
 
-	Eigen::Matrix<double,SENSOR_N,1> yk;//Innovation
-	Eigen::Matrix<double,SENSOR_N,SENSOR_N> Sk;//Covariance of innovation
-
 	Eigen::Matrix<double,STATE_N,SENSOR_N> Kk;//Kalman Gain
 
 

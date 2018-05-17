@@ -29,7 +29,7 @@ void stateTest(){
 	st.vel<<0.0,0.1,0.0;
 	double angle=0.0*M_PI;
 	st.ori=Eigen::Quaterniond(cos(angle/2),0,0,sin(angle/2));
-	st.Pk=0.1*Eigen::Matrix<double,STATE_N,STATE_N>::Identity();
+	st.Pk=0.01*Eigen::Matrix<double,STATE_N,STATE_N>::Identity();
 	st.Rk=0.01*Eigen::Matrix<double,SENSOR_N,SENSOR_N>::Identity();
 	st.accelSens<<0.0,0.0,9.81;
 	st.accelSens<<-0.01,0.0,9.81;
@@ -47,19 +47,20 @@ void stateTest(){
 		if(++i%1000==0){std::cout<<dts<<"\t"<<st.pos.transpose().format(fmt)<<std::endl;}
 		now=std::chrono::high_resolution_clock::now();
 		dts=std::chrono::duration_cast<std::chrono::duration<double>>(now-begin).count();
-	}while(dts<20.0&&i<max);
+	}while(dts<10.0&&i<max);
 
 	std::cout<<"xk"<<std::endl<<st.xk<<std::endl<<std::endl;
 	std::cout<<"Fk"<<std::endl<<st.Fk<<std::endl<<std::endl;
 	std::cout<<"Pk"<<std::endl<<st.Pk<<std::endl<<std::endl;
 	std::cout<<"zk"<<std::endl<<st.zk<<std::endl<<std::endl;
 	std::cout<<"Hk"<<std::endl<<st.Hk<<std::endl<<std::endl;
-	std::cout<<"Sk"<<std::endl<<st.Sk<<std::endl<<std::endl;
 	std::cout<<"Kk"<<std::endl<<st.Kk<<std::endl<<std::endl;
 	std::cout<<"accelSens"<<std::endl<<st.accelSens<<std::endl<<std::endl;
 	std::cout<<"accelState"<<std::endl<<st.accelState<<std::endl<<std::endl;
 	std::cout<<"vel"<<std::endl<<st.vel<<std::endl<<std::endl;
 	std::cout<<"Loops:"<<i<<std::endl<<std::endl;
+	std::cout<<"testquat:"<<std::endl<<(st.ori*Eigen::Quaterniond(0,1,0,0)*st.ori.inverse()).vec()<<std::endl<<std::endl;
+
 }
 
 /*
