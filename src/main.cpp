@@ -1,21 +1,38 @@
 #include<iostream>
 #include"Socket.hpp"
-#include"state.hpp"
+#include"sensor.hpp"
 
 //void mapTest();
 //void envrecTest();
 //void contrTest();
 //void pathfTest();
 void stateTest();
+void arduinoTest();
 
 int main(){
-	stateTest();
+	arduinoTest();
+	//stateTest();
 	//pathfTest();
 	//contrTest();
 	//envrecTest();
 	//mapTest();
 	return 0;
 }
+
+void arduinoTest(){
+
+	ArduinoHandler ino("/dev/ttyACM0");
+	while(true){
+		std::cout<<"Receive: "<<std::endl;
+		std::cout<<ino.receive()<<std::endl;
+		std::string msg="abc";
+		int rv=ino.sends(msg);
+		std::cout<<"sends retval: "<<rv<<std::endl;
+		usleep(40000);
+	}
+
+}
+/*
 void stateTest(){
 	std::string tsock="testsock.sock";
 	SrvSocket ss(tsock);
@@ -62,7 +79,7 @@ void stateTest(){
 	std::cout<<"testquat:"<<std::endl<<(st.ori*Eigen::Quaterniond(0,1,0,0)*st.ori.inverse()).vec()<<std::endl<<std::endl;
 
 }
-
+*/
 /*
 void pathfTest(){
 	std::string tsock="testsock.sock";

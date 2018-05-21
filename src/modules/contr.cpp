@@ -60,7 +60,7 @@ double symSat(double f,double th){
 
 void Contr::process(){
 	Eigen::Vector2d relDist=this->nPos-this->pos.head(2);
-	Eigen::Vector3d ydir=rotQuat(Eigen::Vector3d(0.0,1.0,0.0),this->ori);
+	Eigen::Vector3d ydir=rotQuat(Eigen::Vector3d(0.0,1.0,0.0),this->ori.inverse());
 	ydir.z()=0;
 	double vn=relDist.norm()*ydir.norm();
 	Eigen::Vector3d rd3;
