@@ -1,6 +1,7 @@
 #include<iostream>
 #include"Socket.hpp"
 #include"sensor.hpp"
+#include"ArduinoHndlr.hpp"
 
 //void mapTest();
 //void envrecTest();

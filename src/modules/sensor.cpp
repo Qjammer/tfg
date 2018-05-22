@@ -2,7 +2,6 @@
 
 Sens::Sens(const std::string& srvaddr):Module(MOD_TYPE::SENS,srvaddr){}
 
-
 void Sens::handleVarMessage(varmes& mv){
 }
 
