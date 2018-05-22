@@ -28,7 +28,7 @@ ArduinoHandler::ArduinoHandler(const std::string& addr):addr(addr){
 	tcflush(this->fd,TCIOFLUSH);
 }
 
-std::string ArduinoHandler::receive(){
+std::vector<std::string> ArduinoHandler::receive(){
 	std::string s;
 	int sz;
 	do{
@@ -41,7 +41,36 @@ std::string ArduinoHandler::receive(){
 			s+=std::string(this->buf,sz);
 		}
 	}while(sz>0);
-	return s;
+	this->partMes+=s;
+	return this->processMessages();
+}
+
+std::vector<std::string> ArduinoHandler::processMessages(){
+	std::vector<std::string> v;
+	int initpos;
+	std::string& pm=this->partMes;
+
+
+	std::cout<<pm<<std::endl;
+	while(pm.size()>0){
+		std::cout<<"Size of pm: "<<pm.size()<<std::endl;
+		initpos=pm.find("ar");
+		if(initpos==-1){
+			pm.clear();
+		} else {
+			pm.erase(pm.begin(),pm.begin()+initpos);
+			const char* c=pm.c_str();
+			const uint32_t* p=reinterpret_cast<const uint32_t*>(c+2);
+			unsigned int sz=2+sizeof(uint32_t)+(*p);
+			if(pm.size()>=sz){
+				v.push_back(pm.substr(0,sz));
+				pm.erase(pm.begin(),pm.begin()+sz);
+			} else {
+				break;
+			}
+		}
+	}
+	return v;
 }
 
 int ArduinoHandler::sends(const std::string& msg){

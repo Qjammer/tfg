@@ -5,6 +5,11 @@ Sens::Sens(const std::string& srvaddr):Module(MOD_TYPE::SENS,srvaddr){}
 void Sens::handleVarMessage(varmes& mv){
 }
 
+void Sens::handleArduino(int i){
+
+
+}
+
 std::string Sens::prepareMesGyro(const Eigen::Vector3d& v) const{
 	return this->srvs.prepareMessage(modStr<MOD_TYPE::SENS>(),"gy",v.x(),v.y(),v.z());
 }
