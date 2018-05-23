@@ -24,6 +24,10 @@ void arduinoTest(){
 
 	ArduinoHandler ino("/dev/ttyACM0");
 	while(true){
+		std::string msg="a";
+		int rv=ino.sends(msg);
+		std::cout<<"sends retval: "<<rv<<std::endl;
+
 		std::vector<std::string> rcv=ino.receive();
 		std::cout<<"Receive: "<<std::endl;
 		for(auto i:rcv){
@@ -31,13 +35,12 @@ void arduinoTest(){
 			if(i[0]=='a'){
 				const char* b=rcv[0].c_str();
 				const int32_t* p=reinterpret_cast<const int32_t*>(b+9);
+				const int32_t* q=reinterpret_cast<const int32_t*>(b+13);
 				std::cout<<*p<<std::endl;
+				std::cout<<*q<<std::endl;
 			}
 		}
-		std::string msg="bcd";
-		int rv=ino.sends(msg);
-		std::cout<<"sends retval: "<<rv<<std::endl;
-		usleep(30000);
+		usleep(60000);
 	}
 
 }
