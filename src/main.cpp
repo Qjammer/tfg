@@ -24,14 +24,14 @@ void arduinoTest(){
 	
 	ArduinoHandler ino("/dev/ttyACM0");
 	while(true){
-		//std::string msg="a";
-		std::string msg=ino.prepareMessage("ar","ts",int(32),int(45));
+		std::string msg="a";
+		//std::string msg=ino.prepareMessage("ar","ts",int(32),int(45));
 		
 		int rv=ino.sends(msg);
 		//std::cout<<"sends retval: "<<rv<<std::endl;
 
 		std::vector<std::string> rcv=ino.receive();
-		//std::cout<<"Receive: "<<std::endl;
+		std::cout<<"Receive: "<<std::endl;
 		for(auto i:rcv){
 			//std::cout<<i<<std::endl;
 			varmes mes=ino.processMessage(i);

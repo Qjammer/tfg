@@ -51,6 +51,7 @@ std::vector<std::string> ArduinoHandler::processMessages(){
 	std::string& pm=this->partMes;
 
 	while(pm.size()>0){
+		//std::cout<<pm.size()<<" ";
 		initpos=pm.find("ar");
 		if(initpos==-1){
 			pm.clear();
@@ -62,7 +63,7 @@ std::vector<std::string> ArduinoHandler::processMessages(){
 			if(pm.size()>=sz){
 				v.push_back(pm.substr(0,sz));
 				pm.erase(pm.begin(),pm.begin()+sz);
-			} else if(pm.size()>256){//Artificial limit to make sure no endless loops appear
+			} else if(sz>256){//Artificial limit to make sure no endless loops appear
 				pm=pm.substr(2);
 				initpos=pm.find("ar");
 				pm.erase(pm.begin(),pm.begin()+initpos);

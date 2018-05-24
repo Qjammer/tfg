@@ -1,5 +1,7 @@
 #pragma once
+#if __cplusplus>=201703L
 #include<variant>
+#endif
 
 #define ALLOWED_TYPES void*,bool,char,int,long,float,double
 template<typename ...>
@@ -104,10 +106,13 @@ public:
 		const char*c=msg.c_str()+4;
 		const int32_t* sp=reinterpret_cast<const int32_t*>(c);
 		vm.size=*sp;
+		//std::cout<<vm.size<<std::endl;
+		for(auto i:msg){std::cout<<int(i)<<" ";}std::cout<<std::endl;
 
 		vecvar& vec=vm.vars;
 		unsigned int pos=4+sizeof(int32_t);//Ignore header info for now
-		while(pos<msg.size()){
+		while(pos<vm.size+4+sizeof(int32_t)){
+			//std::cout<<pos<<" "<<msg.size()<<" "<<vm.size<<std::endl;
 			switch (msg[pos]){
 		#define processTypeSwitch(U) case typeChar<U>():{vec.push_back(myvari(typeChar<U>(),processType<U>(msg,pos)));break;}
 				processTypeSwitch(void*);
@@ -117,6 +122,8 @@ public:
 				processTypeSwitch(long);
 				processTypeSwitch(float);
 				processTypeSwitch(double);
+				default:
+					break;
 			}
 		}
 		return vm;
