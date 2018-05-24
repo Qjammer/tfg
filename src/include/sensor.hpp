@@ -15,7 +15,7 @@ public:
 	void handleArduino(int i);
 	void handleArduinos();
 
-	void handleVarMessage(varmes& mv);
+	void handleVarMessage(const varmes& mv);
 
 	virtual void handleOutComms();
 	std::vector<std::string> prepareMesGyros();

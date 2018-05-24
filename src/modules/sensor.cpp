@@ -2,7 +2,7 @@
 
 Sens::Sens(const std::string& srvaddr):Module(MOD_TYPE::SENS,srvaddr){}
 
-void Sens::handleVarMessage(varmes& mv){
+void Sens::handleVarMessage(const varmes& mv){
 }
 
 void Sens::handleArduino(int i){
