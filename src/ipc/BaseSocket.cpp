@@ -74,39 +74,3 @@ int BaseSocket::sendsFD(const std::string& msg,int fd){
 	return sr;
 }
 
-template<typename T>
-T processType(const std::string& msg,unsigned int& pos){
-	char ar[sizeof(T)];
-	pos++;
-	for(unsigned int i=0;i<sizeof(T);++i){
-	ar[i]=msg[pos+i];
-	}
-	pos+=sizeof(T);
-	T* t = reinterpret_cast<T*>(ar);
-	return *t;
-}
-
-varmes BaseSocket::processMessage(const std::string& msg){
-	varmes vm;
-	vm.sender=std::string(msg.begin(),msg.begin()+2);
-	vm.purpose=std::string(msg.begin()+2,msg.begin()+4);
-	//vm.purpose[0]=msg[2];
-	//vm.purpose[1]=msg[3];
-
-	vecvar& vec=vm.vars;
-	unsigned int pos=4;//Ignore header info for now
-	while(pos<msg.size()){
-		switch (msg[pos]){
-	#define processTypeSwitch(U) case typeChar<U>():{vec.push_back(myvari(typeChar<U>(),processType<U>(msg,pos)));break;}
-			processTypeSwitch(void*);
-			processTypeSwitch(bool);
-			processTypeSwitch(int);
-			processTypeSwitch(char);
-			processTypeSwitch(long);
-			processTypeSwitch(float);
-			processTypeSwitch(double);
-		}
-	}
-	return vm;
-
-}

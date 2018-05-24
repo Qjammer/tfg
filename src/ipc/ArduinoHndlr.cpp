@@ -57,8 +57,8 @@ std::vector<std::string> ArduinoHandler::processMessages(){
 		} else {
 			pm.erase(pm.begin(),pm.begin()+initpos);
 			const char* c=pm.c_str();
-			const uint32_t* p=reinterpret_cast<const uint32_t*>(c+2);
-			unsigned int sz=2+sizeof(uint32_t)+(*p);
+			const uint32_t* p=reinterpret_cast<const uint32_t*>(c+4);
+			unsigned int sz=4+sizeof(uint32_t)+(*p);
 			if(pm.size()>=sz){
 				v.push_back(pm.substr(0,sz));
 				pm.erase(pm.begin(),pm.begin()+sz);

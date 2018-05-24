@@ -21,26 +21,32 @@ int main(){
 }
 
 void arduinoTest(){
-
+	
 	ArduinoHandler ino("/dev/ttyACM0");
 	while(true){
-		std::string msg="a";
+		//std::string msg="a";
+		std::string msg=ino.prepareMessage("ar","ts",int(32),int(45));
+		
 		int rv=ino.sends(msg);
-		std::cout<<"sends retval: "<<rv<<std::endl;
+		//std::cout<<"sends retval: "<<rv<<std::endl;
 
 		std::vector<std::string> rcv=ino.receive();
-		std::cout<<"Receive: "<<std::endl;
+		//std::cout<<"Receive: "<<std::endl;
 		for(auto i:rcv){
-			std::cout<<i<<std::endl;
-			if(i[0]=='a'){
-				const char* b=rcv[0].c_str();
-				const int32_t* p=reinterpret_cast<const int32_t*>(b+9);
-				const int32_t* q=reinterpret_cast<const int32_t*>(b+13);
-				std::cout<<*p<<std::endl;
-				std::cout<<*q<<std::endl;
+			//std::cout<<i<<std::endl;
+			varmes mes=ino.processMessage(i);
+			std::cout<<mes.sender<<" "<<mes.purpose<<" ";
+			for(auto i:mes.vars){
+				if (i.first==typeChar<int>()){
+					std::cout<<std::get<int>(i.second)<<" ";
+				}
+				if (i.first==typeChar<float>()){
+					std::cout<<std::get<float>(i.second)<<"\t";
+				}
 			}
+			std::cout<<std::endl;
 		}
-		usleep(60000);
+		usleep(500000);
 	}
 
 }

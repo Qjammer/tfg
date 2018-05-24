@@ -2,8 +2,9 @@
 #include<iostream>
 #include<vector>
 #include<termios.h>
+#include"protocolHandler.hpp"
 
-class ArduinoHandler{
+class ArduinoHandler:public protocolHandler{
 public:
 	struct termios options;
 	std::string addr;
