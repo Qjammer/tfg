@@ -2,19 +2,19 @@
 
 bucket::bucket(Eigen::Vector2d c):
 	c(c),pQueue(0),pCounter(0),
-	FFo(Eigen::Matrix3d::Zero()),
-	FZo(Eigen::Vector3d::Zero()),
+	FWFo(Eigen::Matrix3d::Zero()),
+	FWZo(Eigen::Vector3d::Zero()),
 	beta(Eigen::Vector3d::Zero()),
-	z(0),w(0)
+	z(0),w(2)
 {
 
 }
-bool bucket::addPoint(point p){
+bool bucket::addPoint(pointw p){
 	this->pQueue.push_back(p);
 	return this->calcNeeded();
 }
 
-bool bucket::addPoints(const std::vector<point>& pts){
+bool bucket::addPoints(const std::vector<pointw>& pts){
 	this->pQueue.insert(this->pQueue.end(),pts.begin(),pts.end());
 	return this->calcNeeded();
 }
@@ -31,21 +31,23 @@ void bucket::processPoints(){
 	if(!this->calcAllowed()){return;}
 	Eigen::MatrixXd F(3,this->pQueue.size());
 	Eigen::VectorXd Z(this->pQueue.size());
+	Eigen::SparseMatrix<double> W(this->pQueue.size(),this->pQueue.size());
 	for(unsigned int i=0;i<this->pQueue.size();++i){
-		//TODO:Add weights
 		F.col(i)<<1,this->pQueue[i].x(),this->pQueue[i].y();
 		Z.row(i)<<this->pQueue[i].z();
+		W.insert(i,i)=(this->pQueue[i][3]);
 	}
+	W.makeCompressed();
 	this->pCounter+=this->pQueue.size();
 	this->pQueue.clear();
 
-	Eigen::Matrix3d FFn=F*Eigen::Transpose(F);
-	Eigen::Vector3d FZn=F*Z;
+	Eigen::Matrix3d FWFn=F*W*F.transpose();
+	Eigen::Vector3d FWZn=F*W*Z;
 
-	this->FFo=FFn+this->FFo;
-	this->FZo=FZn+this->FZo;
+	this->FWFo=FWFn+this->FWFo;
+	this->FWZo=FWZn+this->FWZo;
 
-	this->beta= this->FFo.llt().solve(this->FZo);
+	this->beta= this->FWFo.llt().solve(this->FWZo);
 	this->z=this->beta.dot(Eigen::Vector3d(1,this->c.x(),this->c.y()));
 
 	this->calcWeight();
@@ -67,14 +69,14 @@ void buckMap::processPendingBuckets(){
 	}
 }
 
-void buckMap::insertPoint(point p){
-	key k=this->calcKey(p);
+void buckMap::insertPoint(pointw p){
+	key k=this->calcKey(p.head<3>());
 	if(this->insertPointToKey(p,k)){
 		this->pb.insert(k);
 	}
 }
 
-bool buckMap::insertPointToKey(point p,key k){
+bool buckMap::insertPointToKey(pointw p,key k){
 	auto f=this->m.find(k);
 	if(f==this->m.end()){
 		this->m.emplace(k,Eigen::Vector2d(k.first*this->nd.x(),k.second*this->nd.y()));
@@ -92,19 +94,39 @@ EnvRec::EnvRec(const std::string& srvaddr):Module(MOD_TYPE::ENVREC,srvaddr),bm(E
 
 void EnvRec::preprocessPoints(){
 		for(auto i:this->unp){
-			//TODO:Transform
+			Eigen::Quaterniond q1;
+			q1.w()=cos(i[0]/2);
+			q1.vec()=Eigen::Vector3d::Zero();
+			q1.vec().x()=sin(i[0]/2);
 
-			//Stuff with quaternions
-			Eigen::Quaterniond q;
-			q.w()=0;
-			q.vec()=i;
-			Eigen::Vector3d r=this->pos+(this->ori*q*this->ori.inverse()).vec();
-			this->bm.insertPoint(r);
+			Eigen::Quaterniond q2;
+			q2.w()=cos(i[1]/2);
+			q2.vec()=Eigen::Vector3d::Zero();
+			q2.vec().z()=sin(i[1]/2);
+
+			Eigen::Quaterniond qtotal=this->ori.inverse()*q2*q1;
+
+			Eigen::Quaterniond v;
+			v.w()=0;
+			v.vec()=Eigen::Vector3d::Zero();
+			v.vec().y()=i[2];
+			Eigen::Vector3d rel=(qtotal*v*qtotal.inverse()).vec();
+
+			pointw xyzw;
+			xyzw.head<3>()=this->pos+rel;
+			const double varr=0.01;//meters
+			const double vartheta=0.017;//radians
+			const double varphi=0.017;//radians
+			double variance=varr+i[2]*i[2]*(vartheta+varphi);
+			xyzw.tail<1>()[0]=1/variance;
+			std::cout<<"xyzw"<<std::endl<<xyzw<<std::endl<<std::endl;
+			std::cout<<"variance"<<std::endl<<variance<<std::endl<<std::endl;
+			this->bm.insertPoint(xyzw);
 		}
 		this->unp.clear();
 	}
 
-void EnvRec::handleMesOri(varmes& mv){
+void EnvRec::handleMesOri(const varmes& mv){
 	if(varCond<double,double,double,double>(mv)){
 		makeMesVar(double,w,0);
 		makeMesVar(double,x,1);
@@ -114,7 +136,7 @@ void EnvRec::handleMesOri(varmes& mv){
 	}
 }
 
-void EnvRec::handleMesPos(varmes& mv){
+void EnvRec::handleMesPos(const varmes& mv){
 	if(varCond<double,double,double>(mv)){
 		makeMesVar(double,x,0);
 		makeMesVar(double,y,1);
@@ -123,17 +145,29 @@ void EnvRec::handleMesPos(varmes& mv){
 	}
 }
 
-void EnvRec::handleVarMessage(varmes& mv){
+void EnvRec::handleLIDARPoint(const varmes& mv){
+	if(varCond<double,double,double>(mv)){
+		makeMesVar(double,x,0);
+		makeMesVar(double,y,1);
+		makeMesVar(double,z,2);
+		this->unp.emplace_back(x,y,z);
+	}
+}
+
+void EnvRec::handleVarMessage(const varmes& mv){
+	std::cout<<mv.sender<<" "<<mv.purpose<<std::endl;
 	if(mv.sender==modStr<MOD_TYPE::STATE>()){
 		if(mv.purpose=="or"){
 			this->handleMesOri(mv);
 		}else if(mv.purpose=="ps"){
 			this->handleMesPos(mv);
 		}
+	} else if(mv.sender==modStr<MOD_TYPE::SENS>()){
+		if(mv.purpose=="li"){
+			this->handleLIDARPoint(mv);
+		}
 	}
 }
-
-
 
 std::string EnvRec::prepareMesBucket(key k){
 	int kx=k.first;

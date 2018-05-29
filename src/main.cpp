@@ -1,17 +1,20 @@
 #include<iostream>
 #include"Socket.hpp"
 #include"sensor.hpp"
-#include"ArduinoHndlr.hpp"
+#include"envrec.hpp"
+//#include"ArduinoHndlr.hpp"
 
 //void mapTest();
 //void envrecTest();
 //void contrTest();
 //void pathfTest();
-void stateTest();
-void arduinoTest();
+//void stateTest();
+//void arduinoTest();
+void envTest();
 
 int main(){
-	arduinoTest();
+	envTest();
+	//arduinoTest();
 	//stateTest();
 	//pathfTest();
 	//contrTest();
@@ -20,8 +23,44 @@ int main(){
 	return 0;
 }
 
-void arduinoTest(){
+void envTest(){
+	srand((unsigned int) time(0));
 	
+	std::string tsock="testsock.sock";
+	SrvSocket ss(tsock);
+	EnvRec er("envrec.sock");
+	er.clis.emplace_back(tsock);
+	std::string msg1=ss.prepareMessage(modStr<MOD_TYPE::STATE>(),"or",1.0,0.0,0.0,0.0);
+	std::string msg2=ss.prepareMessage(modStr<MOD_TYPE::STATE>(),"ps",0.0,0.0,0.0);
+	ss.acceptsAll();
+	ss.sendsToAll(msg1);
+	ss.sendsToAll(msg2);
+	er.handleInComms();
+	std::cout<<"or"<<std::endl<<er.ori.vec()<<std::endl;
+	std::cout<<"ps"<<std::endl<<er.pos<<std::endl;
+#define PTS 5000
+	Eigen::Matrix<double,2,PTS> randM=Eigen::Matrix<double,2,PTS>::Random();
+	double h=5;
+	for(int i=0;i<randM.cols();++i){
+		double t1=M_PI*(1-randM.col(i).x())/4;
+		double t2=randM.col(i).y();
+		double r=-h/sin(t1-0.1);
+		std::string pmsg=ss.prepareMessage(modStr<MOD_TYPE::SENS>(),"li",t1,t2,r);
+		//std::cout<<pmsg<<std::endl;
+		ss.sendsToAll(pmsg);
+	}
+	er.handleInComms();
+	er.process();
+	for(auto b:er.bm.m){
+		auto k=b.first;
+		std::cout<<k.first<<" "<<k.second<<" "<<b.second.w<<std::endl;
+	
+	}
+
+}
+
+/*
+void arduinoTest(){
 	ArduinoHandler ino("/dev/ttyACM0");
 	while(true){
 		std::string msg="a";
@@ -48,8 +87,8 @@ void arduinoTest(){
 		}
 		usleep(500000);
 	}
-
 }
+*/
 /*
 void stateTest(){
 	std::string tsock="testsock.sock";

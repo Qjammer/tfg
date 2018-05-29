@@ -107,7 +107,7 @@ public:
 		const int32_t* sp=reinterpret_cast<const int32_t*>(c);
 		vm.size=*sp;
 		//std::cout<<vm.size<<std::endl;
-		for(auto i:msg){std::cout<<int(i)<<" ";}std::cout<<std::endl;
+		//for(auto i:msg){std::cout<<uint16_t(i)<<" ";}std::cout<<std::endl;
 
 		vecvar& vec=vm.vars;
 		unsigned int pos=4+sizeof(int32_t);//Ignore header info for now
@@ -123,6 +123,8 @@ public:
 				processTypeSwitch(float);
 				processTypeSwitch(double);
 				default:
+					pos+=512000;//Something wrong happened. skip this message
+					vec.clear();
 					break;
 			}
 		}
@@ -130,3 +132,4 @@ public:
 	}
 #endif
 };
+

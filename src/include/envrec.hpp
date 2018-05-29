@@ -6,24 +6,25 @@
 #include"Socket.hpp"
 
 typedef Eigen::Vector3d point;
+typedef Eigen::Vector4d pointw;
 typedef std::pair<int,int> key;
 
 
 class bucket{
 	public:
 	Eigen::Vector2d c;
-	std::vector<point> pQueue;
+	std::vector<pointw> pQueue;
 	int pCounter;
-	Eigen::Matrix3d FFo;
-	Eigen::Vector3d FZo;
+	Eigen::Matrix3d FWFo;
+	Eigen::Vector3d FWZo;
 	Eigen::Vector3d beta;
 	double z;
-	double w;
+	double w=2;
 
 	bucket(Eigen::Vector2d c);
 
-	bool addPoints(const std::vector<point>& pts);
-	bool addPoint(point p);
+	bool addPoints(const std::vector<pointw>& pts);
+	bool addPoint(pointw p);
 	void processPoints();
 	double calcWeight();
 
@@ -42,8 +43,8 @@ public:
 
 	void processPendingBuckets();
 
-	void insertPoint(point p);
-	bool insertPointToKey(point p,key k);
+	void insertPoint(pointw p);
+	bool insertPointToKey(pointw p,key k);
 
 	key calcKey(point p);
 };
@@ -61,9 +62,10 @@ public:
 
 	void preprocessPoints();
 
-	void handleMesOri(varmes& mv);
-	void handleMesPos(varmes& mv);
-	void handleVarMessage(varmes& mv);
+	void handleMesOri(const varmes& mv);
+	void handleMesPos(const varmes& mv);
+	void handleLIDARPoint(const varmes& mv);
+	void handleVarMessage(const varmes& mv) override;
 
 
 	virtual void handleOutComms();

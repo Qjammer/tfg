@@ -57,18 +57,27 @@ std::vector<std::string> ArduinoHandler::processMessages(){
 			pm.clear();
 		} else {
 			pm.erase(pm.begin(),pm.begin()+initpos);
+			
 			const char* c=pm.c_str();
 			const uint32_t* p=reinterpret_cast<const uint32_t*>(c+4);
 			unsigned int sz=4+sizeof(uint32_t)+(*p);
-			if(pm.size()>=sz){
-				v.push_back(pm.substr(0,sz));
-				pm.erase(pm.begin(),pm.begin()+sz);
-			} else if(sz>256){//Artificial limit to make sure no endless loops appear
-				pm=pm.substr(2);
-				initpos=pm.find("ar");
-				pm.erase(pm.begin(),pm.begin()+initpos);
-			} else {
-				break;
+			int secondpos=pm.substr(2).find("ar");
+			if(secondpos==-1){//Next message hasnt arrived
+				if(pm.size()>=sz){
+					v.push_back(pm.substr(0,sz));
+					pm.erase(pm.begin(),pm.begin()+sz);
+				} else if(sz>256){//Artificial limit to make sure no endless loops appear
+					pm=pm.substr(2);
+				} else {
+					break;
+				}
+			} else {//next message has arrived already
+				if(secondpos+2==sz){//computed size is correct
+					v.push_back(pm.substr(0,secondpos+2));
+					pm.erase(pm.begin(),pm.begin()+secondpos+2);
+				} else {
+					pm.erase(pm.begin(),pm.begin()+1);
+				}
 			}
 		}
 	}
