@@ -24,6 +24,8 @@ ArduinoHandler::ArduinoHandler(const std::string& addr):addr(addr){
 	opts.c_cflag&=~PARENB;
 	//One Stop bit
 	opts.c_cflag&=~CSTOPB;
+	//Disable canonical mode
+	opts.c_lflag&=~ICANON;
 	tcsetattr(this->fd,TCSANOW,&opts);
 	tcflush(this->fd,TCIOFLUSH);
 }
