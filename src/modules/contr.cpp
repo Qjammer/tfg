@@ -47,11 +47,16 @@ void Contr::handleVarMessage(varmes& mv){
 std::string Contr::prepareMesVel(){
 	return this->srvs.prepareMessage(modStr<MOD_TYPE::CONTR>(),"vo",this->vr,this->omega);
 }
+std::string Contr::prepareMesWheels(){
+	return this->srvs.prepareMessage(modStr<MOD_TYPE::CONTR>(),"ws",this->ws[0],this->ws[1],this->ws[2],this->ws[3]);
+}
 
 void Contr::handleOutComms(){
 	this->srvs.acceptsAll();
-	std::string msg=this->prepareMesVel();
-	this->srvs.sendsToAll(msg);
+	std::string msgw=this->prepareMesWheels();
+	this->srvs.sendsToAll(msgw);
+	std::string msgv=this->prepareMesVel();
+	this->srvs.sendsToAll(msgv);
 }
 
 double symSat(double f,double th){
@@ -71,4 +76,14 @@ void Contr::process(){
 	double tant=sint/(1+cost);//Tangent of half angle. Period=2pi
 	this->vr=this->maxV*cost;
 	this->omega=symSat(tant,this->maxO);//Saturate here or in controller?
+	for(int i=0;i<this->wheelpos.size();i++){
+		this->ws[i]=this->calcwheelspeed(this->wheelpos[i]);
+	
+	}
+
+}
+
+double Contr::calcwheelspeed(const Eigen::Vector3d& wp){
+	Eigen::Vector3d vw=Eigen::Vector3d(0,this->vr,0)+Eigen::Vector3d(0,0,this->omega).cross(wp);
+	return vw.norm()/vw[1];
 }
