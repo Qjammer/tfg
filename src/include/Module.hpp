@@ -8,11 +8,10 @@ inline Eigen::Vector3d rotQuat(const Eigen::Vector3d& v,const Eigen::Quaterniond
 }
 
 enum MOD_TYPE:int{
-	SENS,
+	EXTCOM,
 	ENVREC,
 	PATHF,
 	CONTR,
-	ACT,
 	STATE,
 	SUPER,
 	ERR
@@ -21,11 +20,10 @@ enum MOD_TYPE:int{
 template<int i>
 static const constexpr char* modStr(){
 	return
-	i==MOD_TYPE::SENS?"sn":
+	i==MOD_TYPE::EXTCOM?"ex":
 	i==MOD_TYPE::ENVREC?"ev":
 	i==MOD_TYPE::PATHF?"pf":
 	i==MOD_TYPE::CONTR?"cr":
-	i==MOD_TYPE::ACT?"at":
 	i==MOD_TYPE::STATE?"st":
 	i==MOD_TYPE::SUPER?"su":
 	"ER";
@@ -58,7 +56,7 @@ public:
 	MOD_TYPE mt;
 	SrvSocket srvs;
 	std::vector<CliSocket> clis;
-	Module(MOD_TYPE mt,const std::string& srvaddr):mt(mt),srvs(srvaddr){}
+	Module(MOD_TYPE mt,const std::string& srvaddr):active(true),mt(mt),srvs(srvaddr){}
 
 	virtual void handleInComms(){
 		for(auto cli:this->clis){
@@ -80,6 +78,7 @@ public:
 			this->handleInComms();
 			this->process();
 			this->handleOutComms();
+			usleep(500000);
 		}
 	}
 };

@@ -1,6 +1,6 @@
 #include<iostream>
 #include"Socket.hpp"
-#include"sensor.hpp"
+#include"extcomms.hpp"
 #include"envrec.hpp"
 //#include"ArduinoHndlr.hpp"
 
@@ -9,12 +9,12 @@
 //void contrTest();
 //void pathfTest();
 //void stateTest();
-//void arduinoTest();
+void extMessTest();
 void envTest();
 
 int main(){
-	envTest();
-	//arduinoTest();
+	//envTest();
+	extMessTest();
 	//stateTest();
 	//pathfTest();
 	//contrTest();
@@ -45,7 +45,7 @@ void envTest(){
 		double t1=M_PI*(1-randM.col(i).x())/4;
 		double t2=randM.col(i).y();
 		double r=-h/sin(t1-0.1);
-		std::string pmsg=ss.prepareMessage(modStr<MOD_TYPE::SENS>(),"li",t1,t2,r);
+		std::string pmsg=ss.prepareMessage(modStr<MOD_TYPE::EXTCOM>(),"li",t1,t2,r);
 		//std::cout<<pmsg<<std::endl;
 		ss.sendsToAll(pmsg);
 	}
@@ -54,41 +54,19 @@ void envTest(){
 	for(auto b:er.bm.m){
 		auto k=b.first;
 		std::cout<<k.first<<" "<<k.second<<" "<<b.second.w<<std::endl;
-	
-	}
-
-}
-
-/*
-void arduinoTest(){
-	ArduinoHandler ino("/dev/ttyACM0");
-	while(true){
-		std::string msg="a";
-		//std::string msg=ino.prepareMessage("ar","ts",int(32),int(45));
-		
-		int rv=ino.sends(msg);
-		//std::cout<<"sends retval: "<<rv<<std::endl;
-
-		std::vector<std::string> rcv=ino.receive();
-		std::cout<<"Receive: "<<std::endl;
-		for(auto i:rcv){
-			//std::cout<<i<<std::endl;
-			varmes mes=ino.processMessage(i);
-			std::cout<<mes.sender<<" "<<mes.purpose<<" ";
-			for(auto i:mes.vars){
-				if (i.first==typeChar<int>()){
-					std::cout<<std::get<int>(i.second)<<" ";
-				}
-				if (i.first==typeChar<float>()){
-					std::cout<<std::get<float>(i.second)<<"\t";
-				}
-			}
-			std::cout<<std::endl;
-		}
-		usleep(500000);
 	}
 }
-*/
+
+void extMessTest(){
+	std::string tsock="testsock.sock";
+	SrvSocket ss(tsock);//Test socket
+	ExtComms ec("extcomms.sock");
+	ec.ardhndls.emplace_back("/dev/ttyACM0");
+	ec.clis.emplace_back(tsock);
+
+	ec.loop();
+}
+
 /*
 void stateTest(){
 	std::string tsock="testsock.sock";

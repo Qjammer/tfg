@@ -9,7 +9,7 @@ public:
 	struct termios options;
 	std::string addr;
 	int fd;
-	char buf[256];
+	char buf[2048];
 	std::string partMes;
 
 	ArduinoHandler(const std::string& addr);

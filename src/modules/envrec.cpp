@@ -162,7 +162,7 @@ void EnvRec::handleVarMessage(const varmes& mv){
 		}else if(mv.purpose=="ps"){
 			this->handleMesPos(mv);
 		}
-	} else if(mv.sender==modStr<MOD_TYPE::SENS>()){
+	} else if(mv.sender==modStr<MOD_TYPE::EXTCOM>()){
 		if(mv.purpose=="li"){
 			this->handleLIDARPoint(mv);
 		}

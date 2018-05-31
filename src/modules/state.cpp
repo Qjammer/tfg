@@ -41,7 +41,7 @@ void State::handleMesTacho(const varmes& mv){
 }
 
 void State::handleVarMessage(const varmes& mv){
-	if(mv.sender==modStr<MOD_TYPE::SENS>()){
+	if(mv.sender==modStr<MOD_TYPE::EXTCOM>()){
 		if(mv.purpose=="ac"){
 			this->handleMesAccel(mv);
 		}else if(mv.purpose=="gy"){
