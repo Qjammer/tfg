@@ -1,5 +1,5 @@
 #pragma once
-
+#include <stdint.h>
 namespace std{
 #ifndef _GLIBCXX_TYPE_TRAITS
 	template<typename _Tp, _Tp __v>
@@ -14,7 +14,6 @@ namespace std{
 	template<typename,typename> struct is_same:public false_type{};
 	template<typename T> struct is_same<T,T>:public true_type{};
 #endif
-
 #ifndef _GLIBCXX_STRING
 	class string:public String{
 		public:

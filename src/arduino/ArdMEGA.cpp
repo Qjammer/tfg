@@ -9,6 +9,7 @@ Motor M[4] = {
 };
 
 
+void ENCODER();
 void setup() {
   Serial.begin(9600);
   Timer1.initialize (300);
@@ -30,12 +31,12 @@ void loop() {
   Serial.println(M[3].speed);
 
 }
+
 void ENCODER() {
   M[0].ENCODER();
   M[1].ENCODER();
   M[2].ENCODER();
   M[3].ENCODER();
-
 }
 
 
