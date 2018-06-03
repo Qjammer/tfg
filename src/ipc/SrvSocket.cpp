@@ -87,7 +87,7 @@ void SrvSocket::acceptsAll(){
 void SrvSocket::handleAcceptErr(int er){
 	switch(er){
 		case EWOULDBLOCK:
-			std::cout<<"No connection to be accepted"<<std::endl;
+			//std::cout<<"No connection to be accepted"<<std::endl;
 			break;
 		case EBADF:
 			break;

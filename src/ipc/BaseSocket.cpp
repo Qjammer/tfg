@@ -58,7 +58,7 @@ std::vector<std::string> BaseSocket::receiveFD(int fd){
 void BaseSocket::handleReadErr(int er){
 	switch(er){
 		case EWOULDBLOCK:
-			std::cerr<<"Nothing more to read"<<std::endl;
+			//std::cerr<<"Nothing more to read"<<std::endl;
 			break;
 		case EINVAL:
 			std::cerr<<"Invalid fd in read:"<<er<<strerror(er)<<std::endl;
