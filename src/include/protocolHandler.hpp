@@ -2,8 +2,11 @@
 #if __cplusplus>=201703L
 #include<variant>
 #endif
-
-#define ALLOWED_TYPES void*,bool,char,int,long,float,double
+#ifndef Arduino_h
+#define ALLOWED_TYPES bool,char,int32_t,int64_t,float,double
+#else
+#define ALLOWED_TYPES bool,char,int32_t,float
+#endif
 template<typename ...>
 struct is_one_of{static constexpr bool value=false;};
 
@@ -16,13 +19,15 @@ template<typename T>
 static constexpr char typeChar(){
 	static_assert(is_one_of<T,ALLOWED_TYPES>::value,"Type not supported");
 	return
-	std::is_same<T,void*>::value?'a':
+	//std::is_same<T,void*>::value?'a':
 	std::is_same<T,bool>::value?'b':
 	std::is_same<T,char>::value?'c':
-	std::is_same<T,int>::value?'d':
-	std::is_same<T,long>::value?'e':
+	std::is_same<T,int32_t>::value?'d':
 	std::is_same<T,float>::value?'f':
+#ifndef Arduino_h
+	std::is_same<T,long>::value?'e':
 	std::is_same<T,double>::value?'g':
+#endif
 	'z';
 	}
 
@@ -63,7 +68,10 @@ public:
 
 	template<typename T,typename... V>
 	int prepareMessageRec(std::string& ss,T t,V...v)const{
-		return prepareMessageType(ss,t)+prepareMessageRec(ss,v...);
+		int a=prepareMessageType(ss,t);
+		int b=prepareMessageRec(ss,v...);
+		return a+b;
+		//return prepareMessageType(ss,t)+prepareMessageRec(ss,v...);
 	}
 
 	template<typename T>
@@ -73,8 +81,9 @@ public:
 
 	template<typename T>
 	int prepareMessageTypeGen(std::string& ss, T& t,char c)const{
+		T val=T(t);
 		ss+=c;
-		char* cp=reinterpret_cast<char*>(&t);
+		char* cp=reinterpret_cast<char*>(&val);
 		for(unsigned int i=0;i<sizeof(T);++i){
 			ss+=cp[i];
 		}
@@ -84,7 +93,6 @@ public:
 	template <typename T>
 	int prepareMessageType(std::string& ss, T t) const{
 		return prepareMessageTypeGen(ss,t,typeChar<T>());
-	
 	}
 
 	template<typename T>
@@ -106,24 +114,23 @@ public:
 		const char*c=msg.c_str()+4;
 		const int32_t* sp=reinterpret_cast<const int32_t*>(c);
 		vm.size=*sp;
-		//std::cout<<vm.size<<std::endl;
-		//for(auto i:msg){std::cout<<uint16_t(i)<<" ";}std::cout<<std::endl;
 
 		vecvar& vec=vm.vars;
 		unsigned int pos=4+sizeof(int32_t);//Ignore header info for now
 		while(pos<vm.size+4+sizeof(int32_t)){
-			//std::cout<<pos<<" "<<msg.size()<<" "<<vm.size<<std::endl;
 			switch (msg[pos]){
 		#define processTypeSwitch(U) case typeChar<U>():{vec.push_back(myvari(typeChar<U>(),processType<U>(msg,pos)));break;}
-				processTypeSwitch(void*);
 				processTypeSwitch(bool);
 				processTypeSwitch(int);
 				processTypeSwitch(char);
-				processTypeSwitch(long);
 				processTypeSwitch(float);
+#ifndef Arduino_h
+				processTypeSwitch(long);
 				processTypeSwitch(double);
+#endif
 				default:
-					pos+=512000;//Something wrong happened. skip this message
+					std::cerr<<"Something wrong happened. Type code: "<<int(msg[pos])<<std::endl;
+					pos+=500000;//Something wrong happened. skip this message
 					vec.clear();
 					break;
 			}

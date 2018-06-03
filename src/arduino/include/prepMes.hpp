@@ -14,11 +14,17 @@ namespace std{
 	template<typename,typename> struct is_same:public false_type{};
 	template<typename T> struct is_same<T,T>:public true_type{};
 #endif
+
 #ifndef _GLIBCXX_STRING
 	class string:public String{
 		public:
 		unsigned long size(){
 			return this->length();
+		}
+		string & operator+=(const string &rhs){concat(rhs); return (*this);}
+		string& operator+=(char c){concat(&c,1);return(*this);}
+		unsigned char concat(const string&s){
+			return string::concat(s.buffer,s.length());
 		}
 		unsigned char concat(const char *cstr, unsigned int length){
 			unsigned int newlen = len + length;

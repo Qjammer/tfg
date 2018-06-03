@@ -90,7 +90,7 @@ key buckMap::calcKey(point p){
 	return key(kx,ky);
 }
 
-EnvRec::EnvRec(const std::string& srvaddr):Module(MOD_TYPE::ENVREC,srvaddr),bm(Eigen::Vector2d(1.0,1.0)){}
+EnvRec::EnvRec(const std::string& srvaddr):Module(MOD_TYPE::ENVREC,srvaddr),bm(Eigen::Vector2d(0.5,0.5)){}
 
 void EnvRec::preprocessPoints(){
 		for(auto i:this->unp){
@@ -114,12 +114,13 @@ void EnvRec::preprocessPoints(){
 
 			pointw xyzw;
 			xyzw.head<3>()=this->pos+rel;
-			const double varr=0.01;//meters
+			const double varr=0.02;//meters
 			const double vartheta=0.017;//radians
 			const double varphi=0.017;//radians
-			double variance=varr+i[2]*i[2]*(vartheta+varphi);
+			double variance=varr+i[2]*i[2]*(vartheta+varphi);//TODO:Include current position variance
 			xyzw.tail<1>()[0]=1/variance;
-			std::cout<<"xyzw"<<std::endl<<xyzw<<std::endl<<std::endl;
+			std::cout<<"ptr"<<std::endl<<i.transpose()<<std::endl<<std::endl;
+			std::cout<<"xyzw"<<std::endl<<xyzw.transpose()<<std::endl<<std::endl;
 			std::cout<<"variance"<<std::endl<<variance<<std::endl<<std::endl;
 			this->bm.insertPoint(xyzw);
 		}
@@ -155,7 +156,7 @@ void EnvRec::handleLIDARPoint(const varmes& mv){
 }
 
 void EnvRec::handleVarMessage(const varmes& mv){
-	std::cout<<mv.sender<<" "<<mv.purpose<<std::endl;
+	//std::cout<<mv.sender<<" "<<mv.purpose<<std::endl;
 	if(mv.sender==modStr<MOD_TYPE::STATE>()){
 		if(mv.purpose=="or"){
 			this->handleMesOri(mv);

@@ -2,6 +2,7 @@
 #include"Socket.hpp"
 #include"extcomms.hpp"
 #include"envrec.hpp"
+#include"state.hpp"
 //#include"ArduinoHndlr.hpp"
 
 //void mapTest();
@@ -11,16 +12,103 @@
 //void stateTest();
 void extMessTest();
 void envTest();
+void extStateTest();
+void extEnvTest();
 
 int main(){
 	//envTest();
-	extMessTest();
+	//extStateTest();
+	extEnvTest();
+	//extMessTest();
 	//stateTest();
 	//pathfTest();
 	//contrTest();
 	//envrecTest();
 	//mapTest();
 	return 0;
+}
+
+void extEnvTest(){
+	std::string tsock="testsock.sock";
+	SrvSocket ss(tsock);
+	ExtComms ec("extcomms.sock");
+	EnvRec er("envrec.sock");
+
+	er.clis.emplace_back("extcomms.sock");
+	er.clis.emplace_back(tsock);
+	ec.clis.emplace_back(tsock);
+	ec.ardhndls.emplace_back("/dev/ttyArdUNO");
+
+
+	std::string msg1=ss.prepareMessage(modStr<MOD_TYPE::STATE>(),"or",1.0,0.0,0.0,0.0);
+	std::string msg2=ss.prepareMessage(modStr<MOD_TYPE::STATE>(),"ps",0.0,0.0,0.0);
+	ss.acceptsAll();
+	ss.sendsToAll(msg1);
+	ss.sendsToAll(msg2);
+	er.handleInComms();
+	std::cout<<"or"<<std::endl<<er.ori.vec()<<std::endl;
+	std::cout<<"ps"<<std::endl<<er.pos<<std::endl;
+	
+	int i=0;
+	auto begin=std::chrono::high_resolution_clock::now();
+	auto now=begin;
+	double dts=0;
+	while(dts<100.0){
+		ec.doAll();
+		er.doAll();
+		now=std::chrono::high_resolution_clock::now();
+		dts=std::chrono::duration_cast<std::chrono::duration<double>>(now-begin).count();
+		std::cerr<<dts<<std::endl;
+	}
+
+	for(auto b:er.bm.m){
+		auto k=b.first;
+		std::cout<<k.first<<" "<<k.second<<" "<<b.second.w<<std::endl;
+	}
+}
+
+void extStateTest(){
+	std::string tsock="testsock.sock";
+	SrvSocket ss(tsock);//Test socket
+	ExtComms ec("extcomms.sock");
+	State st("state.sock");
+
+	st.clis.emplace_back("extcomms.sock");
+	st.clis.emplace_back(tsock);
+	ec.clis.emplace_back(tsock);
+	ec.ardhndls.emplace_back("/dev/ttyArdUNO");
+
+	st.tprev=std::chrono::high_resolution_clock::now();
+	st.dt=std::chrono::milliseconds(1);
+	st.Pk=0.01*Eigen::Matrix<double,STATE_N,STATE_N>::Identity();
+	st.Rk=0.001*Eigen::Matrix<double,SENSOR_N,SENSOR_N>::Identity();
+
+	int i=0;
+	auto begin=std::chrono::high_resolution_clock::now();
+	auto now=begin;
+	double dts=std::chrono::duration_cast<std::chrono::duration<double>>(now-begin).count();
+	unsigned int max=-1;
+	Eigen::IOFormat fmt(6,Eigen::DontAlignCols,"\t");
+	do{
+		ec.doAll();
+		st.doAll();
+		if(++i%1000==0){std::cout<<dts<<"\t"<<st.pos.transpose().format(fmt)<<std::endl;}
+		now=std::chrono::high_resolution_clock::now();
+		dts=std::chrono::duration_cast<std::chrono::duration<double>>(now-begin).count();
+	}while(dts<10.0&&i<max);
+
+	std::cout<<"xk"<<std::endl<<st.xk<<std::endl<<std::endl;
+	std::cout<<"Fk"<<std::endl<<st.Fk<<std::endl<<std::endl;
+	std::cout<<"Pk"<<std::endl<<st.Pk<<std::endl<<std::endl;
+	std::cout<<"zk"<<std::endl<<st.zk<<std::endl<<std::endl;
+	std::cout<<"Hk"<<std::endl<<st.Hk<<std::endl<<std::endl;
+	std::cout<<"Kk"<<std::endl<<st.Kk<<std::endl<<std::endl;
+	std::cout<<"accelSens"<<std::endl<<st.accelSens<<std::endl<<std::endl;
+	std::cout<<"accelState"<<std::endl<<st.accelState<<std::endl<<std::endl;
+	std::cout<<"vel"<<std::endl<<st.vel<<std::endl<<std::endl;
+	std::cout<<"Loops:"<<i<<std::endl<<std::endl;
+	std::cout<<"testquat:"<<std::endl<<(st.ori*Eigen::Quaterniond(0,1,0,0)*st.ori.inverse()).vec()<<std::endl<<std::endl;
+
 }
 
 void envTest(){
@@ -61,7 +149,7 @@ void extMessTest(){
 	std::string tsock="testsock.sock";
 	SrvSocket ss(tsock);//Test socket
 	ExtComms ec("extcomms.sock");
-	ec.ardhndls.emplace_back("/dev/ttyACM0");
+	ec.ardhndls.emplace_back("/dev/ttyArdUNO");
 	ec.clis.emplace_back(tsock);
 
 	ec.loop();

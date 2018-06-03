@@ -15,7 +15,6 @@ void ExtComms::handleInComms(){
 }
 
 void ExtComms::handleVarMessage(const varmes& mv){
-	std::cout<<mv.sender<<" "<<mv.purpose<<" ";
 	if(mv.sender=="ar"){
 		if(mv.purpose=="ac"){
 			this->handleMesAccel(mv);
@@ -44,7 +43,6 @@ void ExtComms::handleMesAccel(const varmes& mv){
 		makeMesVar(float,x,0);
 		makeMesVar(float,y,1);
 		makeMesVar(float,z,2);
-		std::cout<<x<<" "<<y<<" "<<z<<std::endl;
 		this->accel.emplace_back(x,y,z);
 	}
 }
@@ -121,7 +119,7 @@ std::vector<std::string> ExtComms::prepareMesAccels(){
 }
 
 std::string ExtComms::prepareMesLIDARPt(const Eigen::Vector3d& v) const{
-	return this->srvs.prepareMessage(modStr<MOD_TYPE::EXTCOM>(),"li",v.x(),v.y(),v.z());
+	return this->srvs.prepareMessage(modStr<MOD_TYPE::EXTCOM>(),"li",double(v.x()),double(v.y()),double(v.z()));
 }
 
 std::vector<std::string> ExtComms::prepareMesLIDARPts(){

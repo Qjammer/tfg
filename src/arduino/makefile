@@ -2,7 +2,7 @@ ifeq (${MAKECMDGOALS},upload-ArdUNO)
 PROJ_NAME:=ArdUNO
 CHIPSET:=atmega328p
 CHIP_FREQ:=16000000L
-SERIAL_PORT:=/dev/ttyACM0
+SERIAL_PORT:=/dev/ttyArdUNO
 CU:=ArdUNO.cpp
 LIBS_CPP:=LIDARLite.cpp Wire.cpp twi.c Servo.cpp
 endif
@@ -11,7 +11,7 @@ ifeq (${MAKECMDGOALS},upload-ArdMEGA)
 PROJ_NAME:=ArdMEGA
 CHIPSET:=atmega328p
 CHIP_FREQ:=16000000L
-SERIAL_PORT:=/dev/ttyACM1
+SERIAL_PORT:=/dev/ttyArdMEGA
 CU:=ArdMEGA.cpp Motor.cpp
 LIBS_CPP:=Wire.cpp twi.c Servo.cpp TimerOne.cpp PID_v1.cpp
 endif

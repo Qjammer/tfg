@@ -62,7 +62,6 @@ public:
 		for(auto cli:this->clis){
 			std::vector<std::string> msgs=cli.receive();
 			for(auto msg:msgs){
-				std::cout<<msg<<std::endl;
 				varmes vm=cli.processMessage(msg);
 				this->handleVarMessage(vm);
 			}
@@ -72,12 +71,14 @@ public:
 	virtual void handleVarMessage(const varmes& mv)=0;
 	virtual void process()=0;
 	virtual void handleOutComms()=0;
-
+	virtual void doAll(){
+		this->handleInComms();
+		this->process();
+		this->handleOutComms();
+	}
 	virtual void loop(){
 		while(this->active){
-			this->handleInComms();
-			this->process();
-			this->handleOutComms();
+			this->doAll();
 			usleep(500000);
 		}
 	}

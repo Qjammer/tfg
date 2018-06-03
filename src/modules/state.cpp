@@ -13,10 +13,15 @@ Eigen::Matrix3d skewSym(Eigen::Vector3d& v){
 State::State(const std::string& srvaddr):Module(MOD_TYPE::CONTR,srvaddr){}
 
 void State::handleMesAccel(const varmes& mv){
-	if(varCond<double,double,double,double>(mv)){
+	if(varCond<double,double,double>(mv)){
 		makeMesVar(double,x,0);
 		makeMesVar(double,y,1);
 		makeMesVar(double,z,2);
+		this->accelSens=Eigen::Vector3d(x,y,z);
+	}else if(varCond<float,float,float>(mv)){
+		makeMesVar(float,x,0);
+		makeMesVar(float,y,1);
+		makeMesVar(float,z,2);
 		this->accelSens=Eigen::Vector3d(x,y,z);
 	}
 }
@@ -26,6 +31,11 @@ void State::handleMesGyro(const varmes& mv){
 		makeMesVar(double,x,0);
 		makeMesVar(double,y,1);
 		makeMesVar(double,z,2);
+		this->gyro=Eigen::Vector3d(x,y,z);
+	}else if(varCond<float,float,float>(mv)){
+		makeMesVar(float,x,0);
+		makeMesVar(float,y,1);
+		makeMesVar(float,z,2);
 		this->gyro=Eigen::Vector3d(x,y,z);
 	}
 }
