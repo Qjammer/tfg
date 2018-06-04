@@ -66,10 +66,11 @@ public:
 	Eigen::Matrix<double,3,4> Jquatrotate(const Eigen::Quaterniond& q, const Eigen::Vector3d& v);
 	Eigen::Matrix<double,3,STATE_N> JaccelSens();
 	Eigen::Matrix<double,3,STATE_N> JrotvelSens();
-	std::vector<Eigen::Vector3d> wheelPos={{0.1,0.2,0},
-										   {-0.1,0.2,0},
-										   {0.1,-0.2,0},
-										   {-0.1,-0.2,0}};
+	std::vector<Eigen::Vector3d> wheelPos={
+		{0.1,0.2,0},
+		{-0.1,0.2,0},
+		{0.1,-0.2,0},
+		{-0.1,-0.2,0}};
 	Eigen::Matrix<double,1,STATE_N> JtachoSens(Eigen::Vector3d& r);
 	void calcHk();
 

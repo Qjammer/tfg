@@ -47,6 +47,12 @@ void State::handleMesTacho(const varmes& mv){
 		makeMesVar(double,w3,2);
 		makeMesVar(double,w4,3);
 		this->tacho=Eigen::Vector4d(w1,w2,w3,w4);
+	} else if(varCond<float,float,float,float>(mv)){
+		makeMesVar(float,w1,0);
+		makeMesVar(float,w2,1);
+		makeMesVar(float,w3,2);
+		makeMesVar(float,w4,3);
+		this->tacho=Eigen::Vector4d(w1,w2,w3,w4);
 	}
 }
 
@@ -271,6 +277,7 @@ void State::updateT(){
 
 void State::assemblezk(){
 	this->zk.segment<3>(0)=this->accelSens;
+	this->zk.segment<3>(0)=Eigen::Vector3d::Zero();//TODO:Remove me!
 	this->zk.segment<3>(3)=this->gyro;
 	this->zk.segment<4>(6)=this->tacho;
 }
@@ -282,7 +289,6 @@ void State::assemblexk(){
 	this->xk(9)=this->ori.w();
 	this->xk.segment<3>(10)=this->ori.vec();
 	this->xk.segment<3>(13)=this->rotvel;
-
 }
 
 Eigen::Matrix<double,STATE_N,1> State::expectedxk(){
@@ -346,17 +352,17 @@ void State::predict(){
 	this->calcFk();//TODO:Check if Fk has to be calculated at x=k-1 or x=k
 
 	this->xk=this->expectedxk();
-	this->Pk=(this->Fk*this->Pk*this->Fk.transpose()).eval();
+	this->Pk=this->Fk*this->Pk*this->Fk.transpose();
 }
 
 void State::update(){
 	this->calcHk();
 
 	auto yk=this->zk-this->expectedzk();
-	std::cout<<"yk"<<std::endl<<yk<<std::endl;
+	//std::cout<<"yk"<<std::endl<<yk<<std::endl;
 	auto Sk=this->Rk+this->Hk*this->Pk*this->Hk.transpose();
 	this->Kk=this->Pk*this->Hk.transpose()*Sk.inverse();
-	std::cout<<"Hk"<<std::endl<<Hk<<std::endl;
+	//std::cout<<"Hk"<<std::endl<<Hk<<std::endl;
 
 	this->xk=this->xk+this->Kk*yk;
 	auto IKH=Eigen::Matrix<double,STATE_N,STATE_N>::Identity()-this->Kk*this->Hk;
