@@ -17,5 +17,6 @@ with open('build/testdata.txt','r') as csvdata:
         x.append(float(row[0]))
         y.append(float(row[1]))
         z.append(float(row[2]))
-ax.scatter(x,y,z)
+ax.scatter(x,y,z,s=10,marker='.')
+plt.gca().set_aspect('equal', adjustable='box')
 plt.show()

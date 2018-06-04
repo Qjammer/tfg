@@ -73,8 +73,8 @@ std::string State::prepareMesPos(){
 void State::handleOutComms(){
 	this->srvs.acceptsAll();
 	std::string msgori=this->prepareMesOri();
-	std::string msgpos=this->prepareMesPos();
 	this->srvs.sendsToAll(msgori);
+	std::string msgpos=this->prepareMesPos();
 	this->srvs.sendsToAll(msgpos);
 }
 
@@ -171,13 +171,12 @@ void State::calcFk(){
 	Eigen::Matrix<double,9,STATE_N> linFk=this->linFk();
 	Eigen::Matrix<double,7,STATE_N> rotFk=this->rotFk();
 	this->Fk<<linFk,rotFk;
-
 }
 
 template<typename T> struct TD;
 
 Eigen::Matrix<double,3,4> State::Jquatrotate(const Eigen::Quaterniond& q,const Eigen::Vector3d& v){
-
+	//Jacobian of a rotated vector with respect to the rotation quaternion
 	Eigen::Quaterniond vq={0,v.x(),v.y(),v.z()};
 	const Eigen::Matrix<Eigen::Quaterniond,1,4> qbasis={{1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1}};
 	const Eigen::Matrix<Eigen::Quaterniond,1,4> qbasisinv=qbasis.unaryExpr([](auto&i){return i.conjugate();});
@@ -193,7 +192,6 @@ Eigen::Matrix<double,3,4> State::Jquatrotate(const Eigen::Quaterniond& q,const E
 		J.col(i)=aq1[i].vec()+(aq2[i].vec()-2*am.vec()*qcoef[i])/(std::pow(q.norm(),2));
 	}
 	return J;
-
 }
 
 Eigen::Matrix<double,3,STATE_N> State::JaccelSens(){
@@ -205,11 +203,12 @@ Eigen::Matrix<double,3,STATE_N> State::JaccelSens(){
 	const Eigen::Quaterniond& q=this->ori;
 	Eigen::Matrix3d Jaa=q.toRotationMatrix();
 
-	Eigen::Vector3d v=this->accelState+Eigen::Vector3d(0,0,9.81);
+	Eigen::Vector3d v=this->accelState+Eigen::Vector3d(0,0,9.806);
 	Eigen::Matrix<double,3,4> Jaq=this->Jquatrotate(q,v);
 
 	Eigen::Matrix<double,3,STATE_N> Ja;
 	Ja<<Jax,Jav,Jaa,Jaq,Jaw;
+	Ja=Eigen::Matrix<double,3,STATE_N>::Zero();//TODO:Remove me!
 	return Ja;
 }
 
@@ -229,11 +228,38 @@ Eigen::Matrix<double,3,STATE_N> State::JrotvelSens(){
 	return Jw;
 }
 
+Eigen::Matrix<double,1,STATE_N> State::JtachoSens(Eigen::Vector3d& r){
+	typedef Eigen::Matrix<double,1,3> vt3;
+	typedef Eigen::Matrix<double,1,4> vt4;
+	vt3 zeros3=vt3::Zero();
+	vt3& Jtx=zeros3;
+	vt3& Jta=zeros3;
+
+	const Eigen::Quaterniond& q=this->ori;
+	const Eigen::Matrix3d R=q.toRotationMatrix();
+	double Wz=(R*this->rotvel)[2];
+	double vy=(R*this->vel)[1];
+	double denom=vy+Wz*r[0];
+	
+	vt3 Jtv=R.row(1);
+//> State::Jquatrotate(const Eigen::Quaterniond& q,const Eigen::Vector3d& v){
+	vt4 Jtq=this->Jquatrotate(q,this->vel).row(1)-(skewSym(r)*this->Jquatrotate(q,this->rotvel)).row(1);
+	vt3 Jtw=(-skewSym(r)*R).row(1);
+
+	Eigen::Matrix<double,1,STATE_N> Jt;
+	Jt<<Jtx,Jtv,Jta,Jtq,Jtw;
+	return Jt;
+}
+
 void State::calcHk(){
 	Eigen::Matrix<double,3,STATE_N> accelSensMat=this->JaccelSens();
 	Eigen::Matrix<double,3,STATE_N> rotvelSensMat=this->JrotvelSens();
+	Eigen::Matrix<double,4,STATE_N> tachoSensMat;
+	for(int i=0;i<this->wheelPos.size();++i){
+		tachoSensMat.row(i)=this->JtachoSens(this->wheelPos[i]);
+	}
 
-	this->Hk<<accelSensMat,rotvelSensMat;
+	this->Hk<<accelSensMat,rotvelSensMat,tachoSensMat;
 }
 
 void State::updateT(){
@@ -246,6 +272,7 @@ void State::updateT(){
 void State::assemblezk(){
 	this->zk.segment<3>(0)=this->accelSens;
 	this->zk.segment<3>(3)=this->gyro;
+	this->zk.segment<4>(6)=this->tacho;
 }
 
 void State::assemblexk(){
@@ -290,7 +317,7 @@ void State::disassemblexk(){
 Eigen::Matrix<double,SENSOR_N,1> State::expectedzk(){
 	Eigen::Quaterniond& q=this->ori;
 //	Eigen::Vector3d f=this->accelState+this->rotvel.cross(this->vel)+Eigen::Vector3d(0,0,9.81);
-	Eigen::Vector3d f=this->accelState+Eigen::Vector3d(0,0,9.81);
+	Eigen::Vector3d f=this->accelState+Eigen::Vector3d(0,0,9.806);
 	Eigen::Quaterniond fq;
 	fq.w()=0;fq.vec()=f;
 	Eigen::Matrix<double,3,1> amexp=(q*fq*q.inverse()).vec();
@@ -299,8 +326,19 @@ Eigen::Matrix<double,SENSOR_N,1> State::expectedzk(){
 	wq.w()=0;wq.vec()=this->rotvel;
 	Eigen::Matrix<double,3,1> wmexp=(q*wq*q.inverse()).vec();
 
+	Eigen::Quaterniond vq;
+	vq.w()=0;vq.vec()=this->vel;
+	Eigen::Matrix<double,3,1> vlocal=(q*vq*q.inverse()).vec();
+	double vy=vlocal[1];
+	double wz=wmexp[2];
+	Eigen::Matrix<double,4,1> wsexp;
+	for(int i=0;i<this->wheelPos.size();++i){
+		auto r=this->wheelPos[i];
+		wsexp.row(i)[0]=vy+wz*r[0];
+	}
+
 	Eigen::Matrix<double,SENSOR_N,1> zkexp;
-	zkexp<<amexp,wmexp;
+	zkexp<<amexp,wmexp,wsexp;
 	return zkexp;
 }
 
@@ -315,8 +353,10 @@ void State::update(){
 	this->calcHk();
 
 	auto yk=this->zk-this->expectedzk();
+	std::cout<<"yk"<<std::endl<<yk<<std::endl;
 	auto Sk=this->Rk+this->Hk*this->Pk*this->Hk.transpose();
 	this->Kk=this->Pk*this->Hk.transpose()*Sk.inverse();
+	std::cout<<"Hk"<<std::endl<<Hk<<std::endl;
 
 	this->xk=this->xk+this->Kk*yk;
 	auto IKH=Eigen::Matrix<double,STATE_N,STATE_N>::Identity()-this->Kk*this->Hk;

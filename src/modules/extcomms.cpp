@@ -1,6 +1,9 @@
 #include"extcomms.hpp"
 
-ExtComms::ExtComms(const std::string& srvaddr):Module(MOD_TYPE::EXTCOM,srvaddr){}
+ExtComms::ExtComms(const std::string& srvaddr):Module(MOD_TYPE::EXTCOM,srvaddr){
+	this->ardhndls.emplace_back("/dev/ttyArdUNO");
+	this->ardhndls.emplace_back("/dev/ttyArdMEGA");
+}
 
 void ExtComms::handleInComms(){
 	//Handle Arduino Messages
@@ -23,7 +26,7 @@ void ExtComms::handleVarMessage(const varmes& mv){
 		} else if(mv.purpose=="li"){
 			this->handleMesLIDARPoint(mv);
 		} else if(mv.purpose=="ta"){
-			//this->handleMesTacho(mv);
+			this->handleMesTacho(mv);
 		} else if(mv.purpose=="gp"){
 			//this->handleMesGPS(mv);
 		}
@@ -65,8 +68,18 @@ void ExtComms::handleMesLIDARPoint(const varmes& mv){
 	}
 }
 
+void ExtComms::handleMesTacho(const varmes& mv){
+	if(varCond<float,float,float,float>(mv)){
+		makeMesVar(float,w0,0);
+		makeMesVar(float,w1,1);
+		makeMesVar(float,w2,2);
+		makeMesVar(float,w3,3);
+		this->tacho.emplace_back(w0,w1,w2,w3);
+	}
+}
+
 void ExtComms::handleMesWheels(const varmes& mv){
-	if(varCond<double,double,double,double,double,double>(mv)){
+	if(varCond<double,double,double,double>(mv)){
 		makeMesVar(double,w1,0);
 		makeMesVar(double,w2,1);
 		makeMesVar(double,w3,2);
@@ -131,6 +144,17 @@ std::vector<std::string> ExtComms::prepareMesLIDARPts(){
 	return v;
 }
 
+std::string ExtComms::prepareMesTacho(const Eigen::Vector4d& v) const{
+	return this->srvs.prepareMessage(modStr<MOD_TYPE::EXTCOM>(),"ta",double(v[0]),double(v[1]),double(v[2]),double(v[3]));
+}
+std::vector<std::string> ExtComms::prepareMesTachos(){
+	std::vector<std::string> v;
+	for(auto i:this->tacho){
+		v.push_back(this->prepareMesTacho(i));
+	}
+	this->tacho.clear();
+	return v;
+}
 void ExtComms::handleOutComms(){
 	//Handle External Messages
 	
@@ -147,6 +171,10 @@ void ExtComms::handleOutComms(){
 	}
 	std::vector<std::string> msglidarpt=this->prepareMesLIDARPts();
 	for(auto i:msglidarpt){
+		this->srvs.sendsToAll(i);
+	}
+	std::vector<std::string> msgtacho=this->prepareMesTachos();
+	for(auto i:msgtacho){
 		this->srvs.sendsToAll(i);
 	}
 }

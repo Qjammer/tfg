@@ -17,8 +17,8 @@ void extEnvTest();
 
 int main(){
 	//envTest();
-	//extStateTest();
-	extEnvTest();
+	extStateTest();
+	//extEnvTest();
 	//extMessTest();
 	//stateTest();
 	//pathfTest();
@@ -76,12 +76,21 @@ void extStateTest(){
 	st.clis.emplace_back("extcomms.sock");
 	st.clis.emplace_back(tsock);
 	ec.clis.emplace_back(tsock);
-	ec.ardhndls.emplace_back("/dev/ttyArdUNO");
+	ec.doAll();
+	ec.doAll();
 
 	st.tprev=std::chrono::high_resolution_clock::now();
 	st.dt=std::chrono::milliseconds(1);
 	st.Pk=0.01*Eigen::Matrix<double,STATE_N,STATE_N>::Identity();
-	st.Rk=0.001*Eigen::Matrix<double,SENSOR_N,SENSOR_N>::Identity();
+	st.vel=0.15*Eigen::Vector3d::Ones();
+	Eigen::Matrix3d id3=Eigen::Matrix3d::Identity();
+	Eigen::Matrix3d Rac=10*id3;
+	Eigen::Matrix3d Rq=0.001*id3;
+	Eigen::Matrix4d Rvs=0.006*Eigen::Matrix4d::Identity();
+	st.Rk=Eigen::Matrix<double,SENSOR_N,SENSOR_N>::Zero();
+	st.Rk.block<3,3>(0,0)=Rac;
+	st.Rk.block<3,3>(3,3)=Rq;
+	st.Rk.block<4,4>(6,6)=Rvs;
 
 	int i=0;
 	auto begin=std::chrono::high_resolution_clock::now();
@@ -149,7 +158,6 @@ void extMessTest(){
 	std::string tsock="testsock.sock";
 	SrvSocket ss(tsock);//Test socket
 	ExtComms ec("extcomms.sock");
-	ec.ardhndls.emplace_back("/dev/ttyArdUNO");
 	ec.clis.emplace_back(tsock);
 
 	ec.loop();

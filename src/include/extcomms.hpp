@@ -11,6 +11,7 @@ public:
 	std::vector<Eigen::Vector3d> accel;
 	std::vector<Eigen::Vector3d> gyro;
 	std::vector<Eigen::Vector3d> lidarpts;
+	std::vector<Eigen::Vector4d> tacho;
 	//Outgoing Data
 	std::vector<Eigen::Vector4d> wheels;
 
@@ -26,7 +27,7 @@ public:
 	void handleMesAccel(const varmes& mv);
 	void handleMesGyro(const varmes& mv);
 	void handleMesLIDARPoint(const varmes& mv);
-	//void handleMesTacho(const varmes& mv);
+	void handleMesTacho(const varmes& mv);
 	
 	//Kernel messages
 	void handleMesWheels(const varmes& mv);
@@ -48,6 +49,8 @@ public:
 	std::string prepareMesAccel(const Eigen::Vector3d& v) const;
 	std::vector<std::string> prepareMesLIDARPts();
 	std::string prepareMesLIDARPt(const Eigen::Vector3d& v) const;
+	std::vector<std::string> prepareMesTachos();
+	std::string prepareMesTacho(const Eigen::Vector4d& v) const;
 
 	virtual void process();
 };
