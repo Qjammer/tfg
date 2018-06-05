@@ -26,11 +26,12 @@ ArduinoHandler::ArduinoHandler(const std::string& addr):addr(addr){
 	opts.c_cflag&=~CSTOPB;
 	//Disable canonical mode
 	opts.c_lflag&=~ICANON;
+	//opts.c_lflag|=ICANON;
 	tcsetattr(this->fd,TCSANOW,&opts);
 	tcflush(this->fd,TCIOFLUSH);
 }
 
-std::vector<std::string> ArduinoHandler::receive(){
+void ArduinoHandler::retrieve(){
 	std::string s;
 	int sz;
 	do{
@@ -39,11 +40,24 @@ std::vector<std::string> ArduinoHandler::receive(){
 		int er=errno;
 		if(sz==-1){
 			//Error
+			switch(er){
+				case EAGAIN:
+					std::cerr<<"Serial Warning: would block"<<std::endl;
+					break;
+
+				default:
+					std::cerr<<"Serial Error "<<er<<": "<<strerror(er)<<std::endl;
+					break;
+			}
 		} else {
 			s+=std::string(this->buf,sz);
 		}
 	}while(sz>0);
 	this->partMes+=s;
+}
+
+std::vector<std::string> ArduinoHandler::receive(){
+	this->retrieve();
 	return this->processMessages();
 }
 

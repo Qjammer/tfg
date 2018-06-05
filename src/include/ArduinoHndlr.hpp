@@ -14,6 +14,7 @@ public:
 
 	ArduinoHandler(const std::string& addr);
 
+	void retrieve();
 	std::vector<std::string> receive();
 	std::vector<std::string> processMessages();
 	int sends(const std::string& msg);

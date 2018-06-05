@@ -40,7 +40,7 @@ public:
 	virtual void handleOutComms();
 	//External messages
 	std::vector<std::string> prepareMesWheels();
-	std::string prepareMesWheels(const Eigen::Vector4f& v) const;
+	std::string prepareMesWheel(const Eigen::Vector4f& v) const;
 	
 	//Kernel messages
 	std::vector<std::string> prepareMesGyros();

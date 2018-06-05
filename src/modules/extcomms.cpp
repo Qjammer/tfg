@@ -20,7 +20,7 @@ void ExtComms::handleInComms(){
 void ExtComms::handleVarMessage(const varmes& mv){
 	if(mv.sender=="ar"){
 		if(mv.purpose=="ac"){
-			this->handleMesAccel(mv);
+			//this->handleMesAccel(mv);
 		} else if(mv.purpose=="gy"){
 			this->handleMesGyro(mv);
 		} else if(mv.purpose=="li"){
@@ -74,6 +74,7 @@ void ExtComms::handleMesTacho(const varmes& mv){
 		makeMesVar(float,w1,1);
 		makeMesVar(float,w2,2);
 		makeMesVar(float,w3,3);
+		std::cout<<w0<<" "<<w1<<" "<<w2<<" "<<w3<<std::endl;
 		this->tacho.emplace_back(w0,w1,w2,w3);
 	}
 }
@@ -100,9 +101,18 @@ std::vector<varmes> ExtComms::handleInArduino(int i){
 	return vmv;
 }
 
-std::string ExtComms::prepareMesWheels(const Eigen::Vector4f& v) const{
-	return this->srvs.prepareMessage(modStr<MOD_TYPE::CONTR>(),"ws",v[0],v[1],v[2],v[3]);
+std::string ExtComms::prepareMesWheel(const Eigen::Vector4f& v) const{
+	return std::string("wheels ")+std::to_string(v[0])+" "+std::to_string(v[1])+" "+std::to_string(v[2])+" "+std::to_string(v[3])+" end ";
+	//return this->srvs.prepareMessage(modStr<MOD_TYPE::CONTR>(),"ws",v[0],v[1],v[2],v[3]);
+}
 
+std::vector<std::string> ExtComms::prepareMesWheels(){
+	std::vector<std::string> v;
+	for(auto i:this->wheels){
+		v.push_back(this->prepareMesWheel(i.cast<float>()));
+	}
+	this->wheels.clear();
+	return v;
 }
 
 std::string ExtComms::prepareMesGyro(const Eigen::Vector3d& v) const{
@@ -147,6 +157,7 @@ std::vector<std::string> ExtComms::prepareMesLIDARPts(){
 std::string ExtComms::prepareMesTacho(const Eigen::Vector4d& v) const{
 	return this->srvs.prepareMessage(modStr<MOD_TYPE::EXTCOM>(),"ta",double(v[0]),double(v[1]),double(v[2]),double(v[3]));
 }
+
 std::vector<std::string> ExtComms::prepareMesTachos(){
 	std::vector<std::string> v;
 	for(auto i:this->tacho){
@@ -155,9 +166,16 @@ std::vector<std::string> ExtComms::prepareMesTachos(){
 	this->tacho.clear();
 	return v;
 }
+
 void ExtComms::handleOutComms(){
 	//Handle External Messages
-	
+	std::vector<std::string> msgwheels=this->prepareMesWheels();
+	for(auto i:msgwheels){
+		this->srvs.sendsToAll(i);
+		for(auto ard:ardhndls){
+			ard.sends(i);
+		}
+	}
 	
 	//Handle Kernel Messages
 	this->srvs.acceptsAll();
