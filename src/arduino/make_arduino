@@ -88,12 +88,12 @@ ${BD}/${PROJ_NAME}.hex:${BD}/${PROJ_NAME}.elf
 	avr-objcopy -O ihex -R .eeprom $^ $@
 
 #Uploading file to arduino
-upload-${PROJ_NAME}:${BD}/${PROJ_NAME}.hex
-	sudo avrdude -C/etc/avrdude.conf -v -p${CHIPSET} -c${PROGRAMMER} -P${SERIAL_PORT} -b115200 -D "-Uflash:w:$<:i"
+upload-${PROJ_NAME}:clean ${BD}/${PROJ_NAME}.hex
+	sudo avrdude -C/etc/avrdude.conf -v -p${CHIPSET} -c${PROGRAMMER} -P${SERIAL_PORT} -b115200 -D "-Uflash:w:$(word 2,$^):i"
 .PHONY=upload-${PROJ_NAME}
 
 clean:
-	rm build/* corebuild/* libbuild/*
+	-rm build/* corebuild/* libbuild/*
 .PHONY=clean
 
 deftarget:upload-${PROJ_NAME}

@@ -17,6 +17,7 @@ int pinTheta=6;
 const float thetamin=70;
 const float thetamax=130;
 float d;
+float LidarCooldown=0;
 
 const int MPU_addr=0x68;
 int16_t AcX,AcY,AcZ,Tmp,GyX,GyY,GyZ;
@@ -63,29 +64,38 @@ void setup() {
 double i=0;
 
 void nextPos(){
-	phis+=1;
-	if(phis>phimax){// Go from up to down
-		phis=phimin;
+	if(LidarCooldown<0){
+		LidarCooldown=0;
+		phis+=1;
+		if(phis>phimax){// Go from up to down
+			phis=phimin;
+			s2.write(phis);
+			thetas+=1;
+			s1.write(thetas);
+			//delay(350);
+			LidarCooldown+=350;
+		}
+		LidarCooldown+=15;
 		s2.write(phis);
-		thetas+=1;
-		s1.write(thetas);
-		delay(350);
+		//delay(15);
+		
+		phireal=0+phis*130/140-90;
+		phireal=phireal*PI/180;
+		if(thetas>thetamax){//go from left to right
+			thetas=thetamin;
+			s1.write(thetas);
+			delay(350);
+			LidarCooldown+=350;
+		}
+		thetareal=100+(thetas-100)*(180-90)/(162-100)-90;
+		thetareal=thetareal*PI/180;
 	}
-	s2.write(phis);
-	delay(15);
-	
-	phireal=0+phis*130/140-90;
-	phireal=phireal*PI/180;
-	if(thetas>thetamax){//go from left to right
-		thetas=thetamin;
-		s1.write(thetas);
-		delay(350);
-	}
-	thetareal=100+(thetas-100)*(180-90)/(162-100)-90;
-	thetareal=thetareal*PI/180;
 }
-
+float currT;
+float prevT;
 void loop() {
+	prevT=currT;
+	currT=millis();
 	//Move LIDAR
 	nextPos();
 	
@@ -108,7 +118,7 @@ void loop() {
 	acy=(AcY-AcYBias)*fac;
 	acz=(AcZ-AcZBias)*fac;
 	std::string msgaccel=ph.prepareMessage("ar","ac",acx,acy,acz);
-	Serial.print(msgaccel);
+	//Serial.print(msgaccel);
 
 	const float fgy=PI/(180*131);
 	gyx=(GyX-GyXBias)*fgy;
@@ -119,7 +129,9 @@ void loop() {
 	
 	//Read LIDAR
 	//delay(50);
-	d = lidar.distance()*0.01;
-	std::string msglidar=ph.prepareMessage("ar","li",phireal,thetareal,d);
-	Serial.print(msglidar);
-}
+	LidarCooldown-=currT-prevT;
+	if(LidarCooldown<0){
+		d = lidar.distance()*0.01;
+		std::string msglidar=ph.prepareMessage("ar","li",phireal,thetareal,d);
+		Serial.print(msglidar);
+	}}

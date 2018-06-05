@@ -76,7 +76,7 @@ void Motor::READ() {
     
     if(pid.GetMode())analogWrite(PWM, POWER); //Només si el PID està en AUTOMATIC
     
-    if(speed<0.5 && speed>0){ //Quan la velocitat s'apropa a 0, miram si ha de canviar el sentit de gir o no
+    if(speed<=20 && speed>=0){ //Quan la velocitat s'apropa a 0, miram si ha de canviar el sentit de gir o no
     	if(F) T=1; //F és el sentit de gir "consigna", T és el sentit de gir real
     	else  T=0;
 	}

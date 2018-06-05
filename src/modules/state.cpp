@@ -1,7 +1,7 @@
 #include<eigen3/unsupported/Eigen/CXX11/Tensor>
 #include"state.hpp"
 
-Eigen::Matrix3d skewSym(Eigen::Vector3d& v){
+Eigen::Matrix3d skewSym(const Eigen::Vector3d& v){
 	Eigen::Matrix3d m;
 	m<<
 		     0, -v.z(),  v.y(),
@@ -31,12 +31,14 @@ void State::handleMesGyro(const varmes& mv){
 		makeMesVar(double,x,0);
 		makeMesVar(double,y,1);
 		makeMesVar(double,z,2);
-		this->gyro=Eigen::Vector3d(x,y,z);
+		//this->gyro=Eigen::Vector3d(x,y,z);
+		this->gyro=Eigen::Vector3d(0.0,0.0,z);//TODO:Remove me
 	}else if(varCond<float,float,float>(mv)){
 		makeMesVar(float,x,0);
 		makeMesVar(float,y,1);
 		makeMesVar(float,z,2);
-		this->gyro=Eigen::Vector3d(x,y,z);
+		//this->gyro=Eigen::Vector3d(x,y,z);
+		this->gyro=Eigen::Vector3d(0.0,0.0,z);//TODO:Remove me
 	}
 }
 
@@ -182,20 +184,21 @@ void State::calcFk(){
 template<typename T> struct TD;
 
 Eigen::Matrix<double,3,4> State::Jquatrotate(const Eigen::Quaterniond& q,const Eigen::Vector3d& v){
+	//TODO: Fix this function. It is broken.
 	//Jacobian of a rotated vector with respect to the rotation quaternion
-	Eigen::Quaterniond vq={0,v.x(),v.y(),v.z()};
+	Eigen::Quaterniond vq;vq.w()=0;vq.vec()=v;
 	const Eigen::Matrix<Eigen::Quaterniond,1,4> qbasis={{1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1}};
-	const Eigen::Matrix<Eigen::Quaterniond,1,4> qbasisinv=qbasis.unaryExpr([](auto&i){return i.conjugate();});
+	const Eigen::Matrix<Eigen::Quaterniond,1,4> qbasisconj=qbasis.unaryExpr([](auto&i){return i.conjugate();});
 
 	Eigen::Matrix<Eigen::Quaterniond,1,4> aq1=qbasis*vq*q.inverse();
-	Eigen::Matrix<Eigen::Quaterniond,1,4> aq2=q*vq*qbasisinv;
-	Eigen::Quaterniond am=q*vq*q.inverse();
+	Eigen::Matrix<Eigen::Quaterniond,1,4> aq2=(qbasis*vq*q.inverse()).conjugate();
+	Eigen::Quaterniond aq3=q*vq*q.inverse();
 	//Eigen::Vector4d qcoef=q.coeffs();//Wrong way around: x,y,z,w
 	Eigen::Vector4d qcoef(q.w(),q.vec().x(),q.vec().y(),q.vec().z());
 
 	Eigen::Matrix<double,3,4> J=Eigen::Matrix<double,3,4>::Zero();
 	for(int i=0;i<4;++i){
-		J.col(i)=aq1[i].vec()+(aq2[i].vec()-2*am.vec()*qcoef[i])/(std::pow(q.norm(),2));
+		J.col(i)=aq1[i].vec()-aq2[i].vec()-(2*aq3.vec()*qcoef[i])/(std::pow(q.norm(),2));
 	}
 	return J;
 }
@@ -245,12 +248,12 @@ Eigen::Matrix<double,1,STATE_N> State::JtachoSens(Eigen::Vector3d& r){
 	const Eigen::Matrix3d R=q.toRotationMatrix();
 	double Wz=(R*this->rotvel)[2];
 	double vy=(R*this->vel)[1];
-	double denom=vy+Wz*r[0];
 	
 	vt3 Jtv=R.row(1);
-//> State::Jquatrotate(const Eigen::Quaterniond& q,const Eigen::Vector3d& v){
-	vt4 Jtq=this->Jquatrotate(q,this->vel).row(1)-(skewSym(r)*this->Jquatrotate(q,this->rotvel)).row(1);
+	//vt4 Jtq=this->Jquatrotate(q,this->vel).row(1)-(skewSym(r)*this->Jquatrotate(q,this->rotvel)).row(1);
+	vt4 Jtq=vt4::Zero();
 	vt3 Jtw=(-skewSym(r)*R).row(1);
+	//vt3 Jtw=vt3::Zero();
 
 	Eigen::Matrix<double,1,STATE_N> Jt;
 	Jt<<Jtx,Jtv,Jta,Jtq,Jtw;
@@ -295,7 +298,8 @@ Eigen::Matrix<double,STATE_N,1> State::expectedxk(){
 	double dts=this->dts;
 	Eigen::Vector3d xkx=this->pos+dts*this->vel+0.5*dts*dts*this->accelState;
 	Eigen::Vector3d xkv=this->vel+dts*this->accelState;
-	Eigen::Vector3d xka=this->accelState;
+	//Eigen::Vector3d xka=this->accelState;
+	Eigen::Vector3d xka=Eigen::Vector3d::Zero();
 
 	Eigen::Quaterniond wqdt;
 	wqdt.w()=1-std::pow(this->rotvel.norm()*dts/2,2)/2;
@@ -340,7 +344,7 @@ Eigen::Matrix<double,SENSOR_N,1> State::expectedzk(){
 	Eigen::Matrix<double,4,1> wsexp;
 	for(int i=0;i<this->wheelPos.size();++i){
 		auto r=this->wheelPos[i];
-		wsexp.row(i)[0]=vy+wz*r[0];
+		wsexp.row(i)[0]=vy-wz*r[0];
 	}
 
 	Eigen::Matrix<double,SENSOR_N,1> zkexp;
