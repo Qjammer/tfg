@@ -10,7 +10,7 @@ ax.set_zlabel('z')
 x=[]
 y=[]
 z=[]
-with open('build/testdata.txt','r') as csvdata:
+with open('../build/points3.txt','r') as csvdata:
     plots=csv.reader(csvdata,delimiter=',')
     for row in plots:
         #print (row)
