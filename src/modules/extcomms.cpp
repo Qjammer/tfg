@@ -2,7 +2,7 @@
 
 ExtComms::ExtComms(const std::string& srvaddr):Module(MOD_TYPE::EXTCOM,srvaddr){
 	this->ardhndls.emplace_back("/dev/ttyArdUNO");
-	this->ardhndls.emplace_back("/dev/ttyArdMEGA");
+	//this->ardhndls.emplace_back("/dev/ttyArdMEGA");
 }
 
 void ExtComms::handleInComms(){
@@ -18,6 +18,7 @@ void ExtComms::handleInComms(){
 }
 
 void ExtComms::handleVarMessage(const varmes& mv){
+	std::cout<<mv.sender<<" "<<mv.purpose;
 	if(mv.sender=="ar"){
 		if(mv.purpose=="ac"){
 			//this->handleMesAccel(mv);
@@ -102,15 +103,20 @@ std::vector<varmes> ExtComms::handleInArduino(int i){
 }
 
 std::string ExtComms::prepareMesWheel(const Eigen::Vector4f& v) const{
-	return std::string("wheels ")+std::to_string(v[0])+" "+std::to_string(v[1])+" "+std::to_string(v[2])+" "+std::to_string(v[3])+" end ";
+	//return std::string("wheels ")+std::to_string(v[0])+" "+std::to_string(v[1])+" "+std::to_string(v[2])+" "+std::to_string(v[3])+" end ";
+	return std::string("W ")+std::to_string(v[0])+" "+std::to_string(v[1])+" "+std::to_string(v[2])+" "+std::to_string(v[3])+std::string(" E");
 	//return this->srvs.prepareMessage(modStr<MOD_TYPE::CONTR>(),"ws",v[0],v[1],v[2],v[3]);
 }
 
 std::vector<std::string> ExtComms::prepareMesWheels(){
 	std::vector<std::string> v;
-	for(auto i:this->wheels){
-		v.push_back(this->prepareMesWheel(i.cast<float>()));
+	//Only process the last one to avoid UART overruns
+	if(this->wheels.size()>0){
+		v.push_back(this->prepareMesWheel(this->wheels.rbegin()->cast<float>()));
 	}
+	//for(auto& i:this->wheels){
+	//	v.push_back(this->prepareMesWheel(i.cast<float>()));
+	//}
 	this->wheels.clear();
 	return v;
 }
@@ -121,7 +127,7 @@ std::string ExtComms::prepareMesGyro(const Eigen::Vector3d& v) const{
 
 std::vector<std::string> ExtComms::prepareMesGyros(){
 	std::vector<std::string> v;
-	for(auto i:this->gyro){
+	for(auto& i:this->gyro){
 		v.push_back(this->prepareMesGyro(i));
 	}
 	this->gyro.clear();
@@ -134,7 +140,7 @@ std::string ExtComms::prepareMesAccel(const Eigen::Vector3d& v) const{
 
 std::vector<std::string> ExtComms::prepareMesAccels(){
 	std::vector<std::string> v;
-	for(auto i:this->accel){
+	for(auto& i:this->accel){
 		v.push_back(this->prepareMesAccel(i));
 	}
 	this->accel.clear();
@@ -147,7 +153,7 @@ std::string ExtComms::prepareMesLIDARPt(const Eigen::Vector3d& v) const{
 
 std::vector<std::string> ExtComms::prepareMesLIDARPts(){
 	std::vector<std::string> v;
-	for(auto i:this->lidarpts){
+	for(auto& i:this->lidarpts){
 		v.push_back(this->prepareMesLIDARPt(i));
 	}
 	this->lidarpts.clear();
@@ -160,7 +166,7 @@ std::string ExtComms::prepareMesTacho(const Eigen::Vector4d& v) const{
 
 std::vector<std::string> ExtComms::prepareMesTachos(){
 	std::vector<std::string> v;
-	for(auto i:this->tacho){
+	for(auto& i:this->tacho){
 		v.push_back(this->prepareMesTacho(i));
 	}
 	this->tacho.clear();
@@ -169,33 +175,43 @@ std::vector<std::string> ExtComms::prepareMesTachos(){
 
 void ExtComms::handleOutComms(){
 	//Handle External Messages
-	std::vector<std::string> msgwheels=this->prepareMesWheels();
-	for(auto i:msgwheels){
-		this->srvs.sendsToAll(i);
-		for(auto ard:ardhndls){
-			ard.sends(i);
+	this->Tprev=this->Tcurr;
+	this->Tcurr=std::chrono::high_resolution_clock::now();
+	this->serialCooldown-=this->Tcurr-this->Tprev;
+	if(this->serialCooldown<hrclock::duration::zero()){
+		std::vector<std::string> msgwheels=this->prepareMesWheels();
+		for(auto& i:msgwheels){
+			std::cout<<"meswheel: "<<i<<std::endl;
+			//this->srvs.sendsToAll(i);
+			for(auto& ard:this->ardhndls){
+				ard.sends(i);
+			}
+			std::cout<<"mes size: "<<i.size()<<std::endl;
+			this->serialCooldown+=std::chrono::duration<int,std::micro>(2*1000000*i.size()*8/115200);
+			std::cout<<std::chrono::duration_cast<std::chrono::milliseconds>(this->serialCooldown).count()<<" ms"<<std::endl;
 		}
 	}
 	
 	//Handle Kernel Messages
 	this->srvs.acceptsAll();
 	std::vector<std::string> msgaccel=this->prepareMesAccels();
-	for(auto i:msgaccel){
+	for(auto& i:msgaccel){
 		this->srvs.sendsToAll(i);
 	}
 	std::vector<std::string> msggyro=this->prepareMesGyros();
-	for(auto i:msggyro){
+	for(auto& i:msggyro){
 		this->srvs.sendsToAll(i);
 	}
 	std::vector<std::string> msglidarpt=this->prepareMesLIDARPts();
-	for(auto i:msglidarpt){
+	for(auto& i:msglidarpt){
 		this->srvs.sendsToAll(i);
 	}
 	std::vector<std::string> msgtacho=this->prepareMesTachos();
-	for(auto i:msgtacho){
+	for(auto& i:msgtacho){
 		this->srvs.sendsToAll(i);
 	}
 }
 
 void ExtComms::process(){
+	//usleep(10000);
 }

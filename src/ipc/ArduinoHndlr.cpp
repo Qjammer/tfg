@@ -42,7 +42,7 @@ void ArduinoHandler::retrieve(){
 			//Error
 			switch(er){
 				case EAGAIN:
-					std::cerr<<"Serial Warning: would block"<<std::endl;
+					std::cerr<<"Serial Warning: Read would block"<<std::endl;
 					break;
 
 				default:

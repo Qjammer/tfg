@@ -47,6 +47,13 @@ namespace std{
 			memcpy(buffer, cstr,length);
 			return *this;
 		}
+		string substring(unsigned int left, unsigned int right) const{
+			string out;
+			if(left>=len) return out;
+			if (right>len)right=len;
+			out.copy(buffer+left,right-left);
+			return out;
+		}
 	};
 #endif
 }

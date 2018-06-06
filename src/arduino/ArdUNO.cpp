@@ -7,15 +7,15 @@
 protocolHandler ph;
 LIDARLite lidar;
 Servo s1;
-float phis,phireal;//Horizontal axis
 int pinPhi=5;
 const float phimin=60;
 const float phimax=100;
+float phis=phimin,phireal;//Horizontal axis
 Servo s2;
-float thetas,thetareal;//Vertical axis
 int pinTheta=6;
 const float thetamin=70;
 const float thetamax=130;
+float thetas=thetamin,thetareal;//Vertical axis
 float d;
 float LidarCooldown=0;
 
@@ -30,9 +30,9 @@ void setup() {
 	//Servos
 	s1.attach(pinPhi);
 	s2.attach(pinTheta);
-	phis=90;
+	phis=phimin;
 	s1.write(phis);
-	thetas=90;
+	thetas=thetamin;
 	s1.write(thetas);
 	//LIDAR
 	lidar.begin(0, true); // default, I2c @ 400 kHz
@@ -70,7 +70,7 @@ void nextPos(){
 		if(phis>phimax){// Go from up to down
 			phis=phimin;
 			s2.write(phis);
-			thetas+=1;
+			thetas+=2;
 			s1.write(thetas);
 			//delay(350);
 			LidarCooldown+=350;
@@ -91,6 +91,7 @@ void nextPos(){
 		thetareal=thetareal*PI/180;
 	}
 }
+
 float currT;
 float prevT;
 void loop() {
@@ -118,7 +119,7 @@ void loop() {
 	acy=(AcY-AcYBias)*fac;
 	acz=(AcZ-AcZBias)*fac;
 	std::string msgaccel=ph.prepareMessage("ar","ac",acx,acy,acz);
-	//Serial.print(msgaccel);
+	Serial.print(msgaccel);
 
 	const float fgy=PI/(180*131);
 	gyx=(GyX-GyXBias)*fgy;
@@ -128,10 +129,11 @@ void loop() {
 	Serial.print(msggyro);
 	
 	//Read LIDAR
-	//delay(50);
 	LidarCooldown-=currT-prevT;
 	if(LidarCooldown<0){
 		d = lidar.distance()*0.01;
 		std::string msglidar=ph.prepareMessage("ar","li",phireal,thetareal,d);
 		Serial.print(msglidar);
-	}}
+	}
+	
+}

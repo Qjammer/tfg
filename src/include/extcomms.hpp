@@ -1,4 +1,5 @@
 #pragma once
+#include<chrono>
 #include<eigen3/Eigen/Eigen>
 #include"Module.hpp"
 #include"ArduinoHndlr.hpp"
@@ -39,6 +40,10 @@ public:
 	//
 	virtual void handleOutComms();
 	//External messages
+	typedef std::chrono::high_resolution_clock hrclock;
+	hrclock::time_point Tprev=hrclock::now();
+	hrclock::time_point Tcurr=hrclock::now();
+	hrclock::duration serialCooldown=hrclock::duration::zero();
 	std::vector<std::string> prepareMesWheels();
 	std::string prepareMesWheel(const Eigen::Vector4f& v) const;
 	

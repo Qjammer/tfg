@@ -9,16 +9,21 @@
 //void envrecTest();
 //void contrTest();
 //void pathfTest();
-//void stateTest();
+void stateTest();
 void extMessTest();
 void envTest();
 void extStateTest();
 void extEnvTest();
+void extActTest();
+
+void writeTest();
 
 int main(){
+	//extActTest();
 	//envTest();
-	extStateTest();
-	//extEnvTest();
+	//writeTest();
+	//extStateTest();
+	extEnvTest();
 	//extMessTest();
 	//stateTest();
 	//pathfTest();
@@ -27,6 +32,54 @@ int main(){
 	//mapTest();
 	return 0;
 }
+/*
+void writeTest(){
+	ExtComms ec("extcomms.sock");
+	//ArduinoHandler ah("/dev/ttyArdMEGA");
+	//ArduinoHandler ah("/dev/ttyArdUNO");
+	usleep(900000);
+	while(true){
+		std::string msg="hahalol";
+		//ah.sends(msg);
+		for(auto& ard:ec.ardhndls){
+			ard.sends(msg);
+		}
+		//usleep(100000);
+		//ah.retrieve();
+		for(auto& ard:ec.ardhndls){
+			ard.retrieve();
+		}
+		for(auto& ard:ec.ardhndls){
+			std::cout<<ard.partMes<<std::endl;
+		}
+	}
+}
+*/
+/*
+void extActTest(){
+	ExtComms ec("extcomms.sock");
+	usleep(900000);
+	
+	int i=0;
+	auto begin=std::chrono::high_resolution_clock::now();
+	auto now=begin;
+	double dts=0;
+	double w=0;
+	double w0=1.0,w1=1.0,w2=1.0,w3=1.0;
+
+	while(dts<1000.0){
+		//usleep(5000);
+		//ec.wheels.push_back({w0,w1,w2,w3});
+		w=0.1*sin(0.5*dts);
+		ec.wheels.push_back({w,w,w,w});
+
+		ec.doAll();
+		now=std::chrono::high_resolution_clock::now();
+		dts=std::chrono::duration_cast<std::chrono::duration<double>>(now-begin).count();
+	}
+
+}
+*/
 
 void extEnvTest(){
 	std::string tsock="testsock.sock";
@@ -37,8 +90,6 @@ void extEnvTest(){
 	er.clis.emplace_back("extcomms.sock");
 	er.clis.emplace_back(tsock);
 	ec.clis.emplace_back(tsock);
-	ec.ardhndls.emplace_back("/dev/ttyArdUNO");
-
 
 	std::string msg1=ss.prepareMessage(modStr<MOD_TYPE::STATE>(),"or",1.0,0.0,0.0,0.0);
 	std::string msg2=ss.prepareMessage(modStr<MOD_TYPE::STATE>(),"ps",0.0,0.0,0.0);
@@ -53,7 +104,7 @@ void extEnvTest(){
 	auto begin=std::chrono::high_resolution_clock::now();
 	auto now=begin;
 	double dts=0;
-	while(dts<100.0){
+	while(dts<50.0){
 		ec.doAll();
 		er.doAll();
 		now=std::chrono::high_resolution_clock::now();
@@ -67,7 +118,9 @@ void extEnvTest(){
 	}
 }
 
+#include<fenv.h>
 void extStateTest(){
+feenableexcept(FE_INVALID | FE_OVERFLOW);
 	std::string tsock="testsock.sock";
 	SrvSocket ss(tsock);//Test socket
 	ExtComms ec("extcomms.sock");
@@ -82,11 +135,13 @@ void extStateTest(){
 	st.tprev=std::chrono::high_resolution_clock::now();
 	st.dt=std::chrono::milliseconds(1);
 	st.Pk=0.01*Eigen::Matrix<double,STATE_N,STATE_N>::Identity();
-	st.vel=0.15*Eigen::Vector3d::Ones();
+	//st.vel<<0.0,0.0,0.0;
+	//st.tacho=0.0*Eigen::Vector4d::Ones();
+	//
 	Eigen::Matrix3d id3=Eigen::Matrix3d::Identity();
-	Eigen::Matrix3d Rac=10*id3;
-	Eigen::Matrix3d Rq=0.001*id3;
-	Eigen::Matrix4d Rvs=0.006*Eigen::Matrix4d::Identity();
+	Eigen::Matrix3d Rac=100*id3;
+	Eigen::Matrix3d Rq=0.03*id3;
+	Eigen::Matrix4d Rvs=0.6*Eigen::Matrix4d::Identity();
 	st.Rk=Eigen::Matrix<double,SENSOR_N,SENSOR_N>::Zero();
 	st.Rk.block<3,3>(0,0)=Rac;
 	st.Rk.block<3,3>(3,3)=Rq;
@@ -98,13 +153,22 @@ void extStateTest(){
 	double dts=std::chrono::duration_cast<std::chrono::duration<double>>(now-begin).count();
 	unsigned int max=-1;
 	Eigen::IOFormat fmt(6,Eigen::DontAlignCols,"\t");
-	do{
+	while(dts<10.0&&i<max){
 		ec.doAll();
+		//st.gyro<<0.0,0.0,0.44;
+		//st.tacho<<0.22,0.22,0.22,0.22;
 		st.doAll();
-		if(++i%1000==0){std::cout<<dts<<"\t"<<st.pos.transpose().format(fmt)<<std::endl;}
+		if(++i%100==0){
+			std::cout<<dts<<std::endl;
+			std::cout<<"pos"<<"\t"<<st.pos.transpose().format(fmt)<<std::endl;
+			std::cout<<"vel"<<"\t"<<st.vel.transpose().format(fmt)<<std::endl;
+			std::cout<<"tac"<<"\t"<<st.tacho.transpose().format(fmt)<<std::endl;
+			std::cout<<"gyr"<<"\t"<<st.gyro.transpose().format(fmt)<<std::endl;
+			std::cout<<"local y vec:"<<std::endl<<(st.ori*Eigen::Quaterniond(0,1,0,0)*st.ori.inverse()).vec().transpose().format(fmt)<<std::endl<<std::endl;
+		}
 		now=std::chrono::high_resolution_clock::now();
 		dts=std::chrono::duration_cast<std::chrono::duration<double>>(now-begin).count();
-	}while(dts<10.0&&i<max);
+	}
 
 	std::cout<<"xk"<<std::endl<<st.xk<<std::endl<<std::endl;
 	std::cout<<"Fk"<<std::endl<<st.Fk<<std::endl<<std::endl;
@@ -116,7 +180,7 @@ void extStateTest(){
 	std::cout<<"accelState"<<std::endl<<st.accelState<<std::endl<<std::endl;
 	std::cout<<"vel"<<std::endl<<st.vel<<std::endl<<std::endl;
 	std::cout<<"Loops:"<<i<<std::endl<<std::endl;
-	std::cout<<"testquat:"<<std::endl<<(st.ori*Eigen::Quaterniond(0,1,0,0)*st.ori.inverse()).vec()<<std::endl<<std::endl;
+	std::cout<<"local y:"<<std::endl<<(st.ori*Eigen::Quaterniond(0,1,0,0)*st.ori.inverse()).vec()<<std::endl<<std::endl;
 
 }
 
@@ -163,7 +227,7 @@ void extMessTest(){
 	ec.loop();
 }
 
-/*
+
 void stateTest(){
 	std::string tsock="testsock.sock";
 	SrvSocket ss(tsock);
@@ -171,18 +235,20 @@ void stateTest(){
 	st.clis.emplace_back(tsock);
 	st.tprev=std::chrono::high_resolution_clock::now();
 	st.dt=std::chrono::milliseconds(10);
-	st.rotvel<<0.0,0.0,0.1;
-	st.gyro<<0.0,0.0,0.1;
+	st.rotvel<<0.0,0.0,0.0;
+	//st.gyro<<0.0,0.0,0.1;
+	//st.vel<<0.0,0.0,0.0;
 	st.vel<<0.0,0.0,0.0;
-	st.vel<<0.0,0.1,0.0;
+	double tv=0.0;
+	st.tacho<<tv,tv,tv,tv;
 	double angle=0.0*M_PI;
 	st.ori=Eigen::Quaterniond(cos(angle/2),0,0,sin(angle/2));
 	st.Pk=0.01*Eigen::Matrix<double,STATE_N,STATE_N>::Identity();
 	st.Rk=0.01*Eigen::Matrix<double,SENSOR_N,SENSOR_N>::Identity();
-	st.accelSens<<0.0,0.0,9.81;
-	st.accelSens<<-0.01,0.0,9.81;
-	st.accelState<<0.0,0.0,0.0;
-	st.accelState<<-0.01,0.0,0.0;
+	//st.accelSens<<0.0,0.0,9.81;
+	//st.accelSens<<-0.01,0.0,9.81;
+	//st.accelState<<0.0,0.0,0.0;
+	//st.accelState<<-0.01,0.0,0.0;
 
 	int i=0;
 	auto begin=std::chrono::high_resolution_clock::now();
@@ -190,12 +256,17 @@ void stateTest(){
 	double dts=std::chrono::duration_cast<std::chrono::duration<double>>(now-begin).count();
 	unsigned int max=-1;
 	Eigen::IOFormat fmt(6,Eigen::DontAlignCols,"\t");
-	do{
+	while(dts<10.0){
+		//st.tacho<<tv,-tv,tv,-tv;
 		st.process();
-		if(++i%1000==0){std::cout<<dts<<"\t"<<st.pos.transpose().format(fmt)<<std::endl;}
+		if(++i%100==0){
+			std::cout<<dts<<"\t"<<st.pos.transpose().format(fmt)<<std::endl;
+			std::cout<<"local y:"<<std::endl<<(st.ori*Eigen::Quaterniond(0,1,0,0)*st.ori.inverse()).vec().transpose().format(fmt)<<std::endl<<std::endl;
+
+		}
 		now=std::chrono::high_resolution_clock::now();
 		dts=std::chrono::duration_cast<std::chrono::duration<double>>(now-begin).count();
-	}while(dts<10.0&&i<max);
+	}
 
 	std::cout<<"xk"<<std::endl<<st.xk<<std::endl<<std::endl;
 	std::cout<<"Fk"<<std::endl<<st.Fk<<std::endl<<std::endl;
@@ -207,10 +278,10 @@ void stateTest(){
 	std::cout<<"accelState"<<std::endl<<st.accelState<<std::endl<<std::endl;
 	std::cout<<"vel"<<std::endl<<st.vel<<std::endl<<std::endl;
 	std::cout<<"Loops:"<<i<<std::endl<<std::endl;
-	std::cout<<"testquat:"<<std::endl<<(st.ori*Eigen::Quaterniond(0,1,0,0)*st.ori.inverse()).vec()<<std::endl<<std::endl;
+	std::cout<<"local y vec:"<<std::endl<<(st.ori*Eigen::Quaterniond(0,1,0,0)*st.ori.inverse()).vec()<<std::endl<<std::endl;
 
 }
-*/
+
 /*
 void pathfTest(){
 	std::string tsock="testsock.sock";
