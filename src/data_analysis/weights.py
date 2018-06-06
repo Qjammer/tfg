@@ -10,7 +10,7 @@ from mpl_toolkits.mplot3d import Axes3D
 x=[]
 y=[]
 z=[]
-with open('../build/buckets3.txt','r') as csvdata:
+with open('data/buckets3.txt','r') as csvdata:
     plots=csv.reader(csvdata,delimiter=' ')
     for row in plots:
         #print (row)
