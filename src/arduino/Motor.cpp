@@ -12,9 +12,10 @@ Motor::Motor (int P, int A, int B, int E1, int E2, double KP, double KI, double 
   
   if (C2>0) SetForward();
   else SetBackward();
-  setpoint = abs(C2);
+  setpoint = fabs(C2);
   
-  pid.SetOutputLimits(60, 255);
+  //pid.SetOutputLimits(60, 255);
+  pid.SetOutputLimits(0, 255);
   pid.SetSampleTime(38);
   pid.SetMode(AUTOMATIC);
 }
@@ -33,16 +34,14 @@ void Motor::SetBackward() { //Marxa endarrere
 
 void Motor::SetSpeed(double w) { //Defineix una consigna
   pid.SetMode(AUTOMATIC);
-  if (w>0) SetForward();
-  else SetBackward();
-  setpoint = abs(w);
+  setpoint = w;
 }
 
 
 void Motor::SetDuty(int w) { //Defineix un cicle de treball
   if (w > -256 && w < 256) {
     pid.SetMode(MANUAL);
-    if (w>0) SetForward();
+    if (w>=0) SetForward();
     else SetBackward();
     analogWrite(PWM, abs(w));
   }
@@ -70,17 +69,25 @@ void Motor::READ() {
     count = 0; //Comptador igual a zero
     n = 0;
 
-    speed = int(digitalSmooth(omega, Array1, i, sorted)); 
+    speed = int(digitalSmooth(omega*(2*T-1), Array1, i, sorted)); 
     
     pid.Compute();
     
-    if(pid.GetMode())analogWrite(PWM, POWER); //Només si el PID està en AUTOMATIC
+    if(pid.GetMode()){//Només si el PID està en AUTOMATIC
+		if(POWER>0){
+			SetForward();
+		} else {
+			SetBackward();
+		}
+		analogWrite(PWM, POWER);
+	} 
     
     if(speed<=10 && speed>=0){ //Quan la velocitat s'apropa a 0, miram si ha de canviar el sentit de gir o no
     	if(F) T=1; //F és el sentit de gir "consigna", T és el sentit de gir real
     	else  T=0;
 	}
-	realspeed=speed*(2*int(T)-1); //Velocitat real = velocitat * sentit de gir real (que no és F, sinó T).
+	//realspeed=speed*(2*int(T)-1); //Velocitat real = velocitat * sentit de gir real (que no és F, sinó T).
+	realspeed=speed;
   }
 }
 

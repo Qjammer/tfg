@@ -22,8 +22,8 @@ int main(){
 	//extActTest();
 	//envTest();
 	//writeTest();
-	//extStateTest();
-	extEnvTest();
+	extStateTest();
+	//extEnvTest();
 	//extMessTest();
 	//stateTest();
 	//pathfTest();
@@ -118,9 +118,9 @@ void extEnvTest(){
 	}
 }
 
-#include<fenv.h>
+//#include<fenv.h>
 void extStateTest(){
-feenableexcept(FE_INVALID | FE_OVERFLOW);
+	//feenableexcept(FE_INVALID | FE_OVERFLOW);
 	std::string tsock="testsock.sock";
 	SrvSocket ss(tsock);//Test socket
 	ExtComms ec("extcomms.sock");
@@ -158,13 +158,15 @@ feenableexcept(FE_INVALID | FE_OVERFLOW);
 		//st.gyro<<0.0,0.0,0.44;
 		//st.tacho<<0.22,0.22,0.22,0.22;
 		st.doAll();
-		if(++i%100==0){
-			std::cout<<dts<<std::endl;
+		if(++i%10==0){
+			std::cout<<"t\t"<<dts<<std::endl;
 			std::cout<<"pos"<<"\t"<<st.pos.transpose().format(fmt)<<std::endl;
 			std::cout<<"vel"<<"\t"<<st.vel.transpose().format(fmt)<<std::endl;
+			std::cout<<"rotvel"<<"\t"<<st.rotvel.transpose().format(fmt)<<std::endl;
+			std::cout<<"q"<<"\t"<<st.ori.w()<<" "<<st.ori.vec().transpose().format(fmt)<<std::endl;
 			std::cout<<"tac"<<"\t"<<st.tacho.transpose().format(fmt)<<std::endl;
 			std::cout<<"gyr"<<"\t"<<st.gyro.transpose().format(fmt)<<std::endl;
-			std::cout<<"local y vec:"<<std::endl<<(st.ori*Eigen::Quaterniond(0,1,0,0)*st.ori.inverse()).vec().transpose().format(fmt)<<std::endl<<std::endl;
+			std::cout<<"local y:"<<"\t"<<(st.ori.inverse()*Eigen::Quaterniond(0,0,1,0)*st.ori).vec().transpose().format(fmt)<<std::endl<<std::endl;
 		}
 		now=std::chrono::high_resolution_clock::now();
 		dts=std::chrono::duration_cast<std::chrono::duration<double>>(now-begin).count();
@@ -180,7 +182,7 @@ feenableexcept(FE_INVALID | FE_OVERFLOW);
 	std::cout<<"accelState"<<std::endl<<st.accelState<<std::endl<<std::endl;
 	std::cout<<"vel"<<std::endl<<st.vel<<std::endl<<std::endl;
 	std::cout<<"Loops:"<<i<<std::endl<<std::endl;
-	std::cout<<"local y:"<<std::endl<<(st.ori*Eigen::Quaterniond(0,1,0,0)*st.ori.inverse()).vec()<<std::endl<<std::endl;
+	std::cout<<"local y:"<<std::endl<<(st.ori.inverse()*Eigen::Quaterniond(0,0,1,0)*st.ori).vec()<<std::endl<<std::endl;
 
 }
 

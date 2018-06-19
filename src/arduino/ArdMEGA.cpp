@@ -16,11 +16,14 @@ void setup() {
   Serial.begin(115200);
   Timer1.initialize (300);
   Timer1.attachInterrupt(ENCODER);
-  M[0].SetSpeed(0);
-  M[1].SetSpeed(0);
-  M[2].SetSpeed(0);
-  M[3].SetSpeed(0);
+  float lspeed=40;
+  float rspeed=40;
+  M[0].SetSpeed(lspeed);
+  M[1].SetSpeed(lspeed);
+  M[2].SetSpeed(-rspeed);
+  M[3].SetSpeed(-rspeed);
 }
+
 void processMes(std::string&m){
 	int i0=m.indexOf(" ");
 	if(i0!=-1){
@@ -71,15 +74,11 @@ void processPartMes(){
 			//no end found
 			return;
 		} else {
-			Serial.print("begin: ");
-			Serial.println(begin);
-			Serial.print("end: ");
-			Serial.println(end);
-			Serial.print("partmes: ");
-			Serial.println(partMes);
+			if(end<begin){
+				partMes.remove(0,end+1);
+				return;
+			}
 			std::string mes=partMes.substring(begin,end+1);
-			Serial.print("mes: ");
-			Serial.println(mes);
 			partMes.remove(0,end+1);
 			processMes(mes);
 		}
@@ -88,31 +87,41 @@ void processPartMes(){
 
 void loop() {
 	//Sensor
-	const float R=0.06;
+	const float R=0.08;
 	const float F=2*PI*R/60;
+	float v0=M[0].realspeed;
+	float v1=M[1].realspeed;
+	float v2=M[2].realspeed;
+	float v3=M[3].realspeed;
 	float d0=M[0].realspeed*F;
 	float d1=M[1].realspeed*F;
 	float d2=-M[2].realspeed*F;
 	float d3=-M[3].realspeed*F;
 	std::string msgtacho=ph.prepareMessage("ar","ta",d0,d1,d2,d3);
-	//Serial.print(msgtacho);
+	Serial.print(msgtacho);
 	/*
-	Serial.println("ar");
-	Serial.print(M[0].speed);
+	Serial.print(v0);
 	Serial.print(" ");
-	Serial.print(M[1].speed);
+	Serial.print(v1);
 	Serial.print(" ");
-	Serial.print(M[2].speed);
+	Serial.print(v2);
 	Serial.print(" ");
-	Serial.println(M[3].speed);
+	Serial.println(v3);
 	*/
+	
 	//Actuator
 	while(Serial.available()>0){
-		partMes+=char(Serial.read());
+		//partMes+=char(Serial.read());
+		Serial.read();
 	}
 
-	processPartMes();
-
+	//processPartMes();
+	float lspeed=50;
+	float rspeed=30;
+	M[0].SetSpeed(lspeed);
+	M[1].SetSpeed(lspeed);
+	M[2].SetSpeed(-rspeed);
+	M[3].SetSpeed(-rspeed);
 }
 
 void ENCODER() {

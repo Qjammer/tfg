@@ -10,6 +10,17 @@ Eigen::Matrix3d skewSym(const Eigen::Vector3d& v){
 	return m;
 }
 
+template<typename T>
+bool isfinite(T& mat,double d){
+	d=1000000;
+	bool r= mat.hasNaN()||(mat.array().abs()>d).any();
+	if(r){
+		std::cerr<<"matrix is not finite"<<std::endl;
+	}
+	return !r;
+}
+
+
 State::State(const std::string& srvaddr):Module(MOD_TYPE::CONTR,srvaddr){}
 
 void State::handleMesAccel(const varmes& mv){
@@ -31,30 +42,44 @@ void State::handleMesGyro(const varmes& mv){
 		makeMesVar(double,x,0);
 		makeMesVar(double,y,1);
 		makeMesVar(double,z,2);
-		//this->gyro=Eigen::Vector3d(x,y,z);
-		this->gyro=Eigen::Vector3d(0.0,0.0,z);//TODO:Remove me
+		//auto v=Eigen::Vector3d(x,y,z);
+		auto v=Eigen::Vector3d(0,0,z);
+		if(isfinite(v,100)){
+			this->gyro=v;//TODO:Remove me
+		} else {
+		}
 	}else if(varCond<float,float,float>(mv)){
 		makeMesVar(float,x,0);
 		makeMesVar(float,y,1);
 		makeMesVar(float,z,2);
-		//this->gyro=Eigen::Vector3d(x,y,z);
-		this->gyro=Eigen::Vector3d(0.0,0.0,z);//TODO:Remove me
+		//auto v=Eigen::Vector3d(x,y,z);
+		auto v=Eigen::Vector3d(0,0,z);
+		if(isfinite(v,100)){
+			this->gyro=v;//TODO:Remove me
+		} else {
+		}
 	}
 }
 
 void State::handleMesTacho(const varmes& mv){
 	if(varCond<double,double,double,double>(mv)){
-		makeMesVar(double,w1,0);
-		makeMesVar(double,w2,1);
-		makeMesVar(double,w3,2);
-		makeMesVar(double,w4,3);
-		this->tacho=Eigen::Vector4d(w1,w2,w3,w4);
+		makeMesVar(double,w0,0);
+		makeMesVar(double,w1,1);
+		makeMesVar(double,w2,2);
+		makeMesVar(double,w3,3);
+		auto v=Eigen::Vector4d(w0,w1,w2,w3);
+		if(isfinite(v,100)){
+			this->tacho=v;
+		}
 	} else if(varCond<float,float,float,float>(mv)){
-		makeMesVar(float,w1,0);
-		makeMesVar(float,w2,1);
-		makeMesVar(float,w3,2);
-		makeMesVar(float,w4,3);
-		this->tacho=Eigen::Vector4d(w1,w2,w3,w4);
+		makeMesVar(float,w0,0);
+		makeMesVar(float,w1,1);
+		makeMesVar(float,w2,2);
+		makeMesVar(float,w3,3);
+		auto v=Eigen::Vector4d(w0,w1,w2,w3);
+		if(isfinite(v,100)){
+			this->tacho=v;
+		}
 	}
 }
 
@@ -252,7 +277,7 @@ Eigen::Matrix<double,1,STATE_N> State::JtachoSens(Eigen::Vector3d& r){
 	vt3 Jtv=R.row(1);
 	//vt4 Jtq=this->Jquatrotate(q,this->vel).row(1)-(skewSym(r)*this->Jquatrotate(q,this->rotvel)).row(1);
 	vt4 Jtq=vt4::Zero();
-	vt3 Jtw=(-skewSym(r)*R).row(1);
+	vt3 Jtw=(-skewSym(r)*R).row(1)*3;
 	//vt3 Jtw=vt3::Zero();
 
 	Eigen::Matrix<double,1,STATE_N> Jt;
@@ -283,6 +308,7 @@ void State::assemblezk(){
 	this->zk.segment<3>(0)=Eigen::Vector3d::Zero();//TODO:Remove me!
 	this->zk.segment<3>(3)=this->gyro;
 	this->zk.segment<4>(6)=this->tacho;
+	isfinite(zk,200);
 }
 
 void State::assemblexk(){
@@ -315,6 +341,8 @@ Eigen::Matrix<double,STATE_N,1> State::expectedxk(){
 }
 
 void State::disassemblexk(){
+	isfinite(xk,10000);
+
 	this->pos=this->xk.segment<3>(0);
 	this->vel=this->xk.segment<3>(3);
 	this->accelState=this->xk.segment<3>(6);
@@ -345,6 +373,10 @@ Eigen::Matrix<double,SENSOR_N,1> State::expectedzk(){
 	for(int i=0;i<this->wheelPos.size();++i){
 		auto r=this->wheelPos[i];
 		wsexp.row(i)[0]=vy-wz*r[0];
+		if(fabs(vy-wz*r[0])>0.0001){
+			wsexp.row(i)[0]+=(wz*wz*r[1]*r[1])/(vy-wz*r[0]);
+		}
+		wsexp.row(i)[0];
 	}
 
 	Eigen::Matrix<double,SENSOR_N,1> zkexp;
@@ -354,23 +386,35 @@ Eigen::Matrix<double,SENSOR_N,1> State::expectedzk(){
 
 void State::predict(){
 	this->calcFk();//TODO:Check if Fk has to be calculated at x=k-1 or x=k
+	isfinite(Fk,100000);
+	isfinite(Pk,100000);
+	isfinite(xk,10000);
 
 	this->xk=this->expectedxk();
+	isfinite(xk,10000);
 	this->Pk=this->Fk*this->Pk*this->Fk.transpose();
+	isfinite(Pk,100000);
 }
-
 void State::update(){
 	this->calcHk();
+	isfinite(Hk,10);
+	isfinite(xk,10000);
 
 	auto yk=this->zk-this->expectedzk();
+	isfinite(yk,1000);
 	//std::cout<<"yk"<<std::endl<<yk<<std::endl;
 	auto Sk=this->Rk+this->Hk*this->Pk*this->Hk.transpose();
+	isfinite(Sk,1000);
 	this->Kk=this->Pk*this->Hk.transpose()*Sk.inverse();
+	isfinite(Kk,10);
 	//std::cout<<"Hk"<<std::endl<<Hk<<std::endl;
 
 	this->xk=this->xk+this->Kk*yk;
+	isfinite(xk,10000);
 	auto IKH=Eigen::Matrix<double,STATE_N,STATE_N>::Identity()-this->Kk*this->Hk;
+	isfinite(IKH,10);
 	this->Pk=IKH*this->Pk*IKH.transpose()+this->Kk*this->Rk*this->Kk.transpose();
+	isfinite(Pk,10);
 }
 
 void State::process(){

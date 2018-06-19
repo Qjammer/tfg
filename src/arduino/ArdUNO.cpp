@@ -21,7 +21,7 @@ float LidarCooldown=0;
 
 const int MPU_addr=0x68;
 int16_t AcX,AcY,AcZ,Tmp,GyX,GyY,GyZ;
-int16_t AcXBias=2912,AcYBias=732,AcZBias=-538,GyXBias=-413,GyYBias=-463,GyZBias=63;
+int16_t AcXBias=2912,AcYBias=732,AcZBias=-538,GyXBias=-453,GyYBias=-431,GyZBias=58;
 float acx,acy,acz;
 float gyx,gyy,gyz;
 
@@ -92,6 +92,8 @@ void nextPos(){
 	}
 }
 
+int32_t it=0;
+int32_t sum=0;
 float currT;
 float prevT;
 void loop() {
@@ -119,7 +121,7 @@ void loop() {
 	acy=(AcY-AcYBias)*fac;
 	acz=(AcZ-AcZBias)*fac;
 	std::string msgaccel=ph.prepareMessage("ar","ac",acx,acy,acz);
-	Serial.print(msgaccel);
+	//Serial.print(msgaccel);
 
 	const float fgy=PI/(180*131);
 	gyx=(GyX-GyXBias)*fgy;
@@ -127,13 +129,18 @@ void loop() {
 	gyz=(GyZ-GyZBias)*fgy;
 	std::string msggyro=ph.prepareMessage("ar","gy",gyx,gyy,gyz);
 	Serial.print(msggyro);
+	//it++;
+	//sum+=GyZ;
+	//Serial.println(float(sum)/it);
 	
 	//Read LIDAR
 	LidarCooldown-=currT-prevT;
+	/*
 	if(LidarCooldown<0){
 		d = lidar.distance()*0.01;
 		std::string msglidar=ph.prepareMessage("ar","li",phireal,thetareal,d);
 		Serial.print(msglidar);
 	}
+	*/
 	
 }
