@@ -67,7 +67,7 @@ public:
 
 	key calcKey(Eigen::Vector2d p);
 
-	void handleVarMessage(varmes& mv);
+	void handleVarMessage(const varmes& mv);
 	void handleMesPos(const varmes& mv);
 	void handleMesWeight(const varmes& mv);
 	void handleMesGoal(const varmes& mv);
@@ -81,5 +81,6 @@ public:
 	void updateRhs(const key& k);
 	void updateVertex(const key& k);
 	void computeShortestPath();
+	std::vector<key> getPath();
 	virtual void process();
 };

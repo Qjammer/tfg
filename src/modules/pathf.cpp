@@ -4,6 +4,7 @@ typedef std::map<key,dNode>::iterator mapIt;
 
 double nCost(const dNode& l,const dNode& r){
 	return 0.5*(l.w+r.w)*(l.pos-r.pos).norm();
+	//return (l.w+r.w)*(l.pos-r.pos).norm();
 }
 
 Pathf::Pathf(const std::string& srvaddr):Module(MOD_TYPE::CONTR,srvaddr){}
@@ -43,7 +44,6 @@ void Pathf::handleMesWeight(const varmes& mv){
 		makeMesVar(int,x,0);
 		makeMesVar(int,y,1);
 		makeMesVar(double,w,2);
-		//TODO: Call function create node if necessary and add to changed nodes
 		key k(x,y);
 		mapIt it=this->nmap.find(k);
 		if(it==this->nmap.end()){
@@ -83,7 +83,7 @@ void Pathf::handleMesGoal(const varmes& mv){
 	}
 }
 
-void Pathf::handleVarMessage(varmes& mv){
+void Pathf::handleVarMessage(const varmes& mv){
 	if(mv.sender==modStr<MOD_TYPE::STATE>()){
 		if(mv.purpose=="ps"){
 			this->handleMesPos(mv);
@@ -199,6 +199,32 @@ void Pathf::computeShortestPath(){
 			}
 		}
 	}
+}
+
+std::vector<key> Pathf::getPath(){
+	key cur=this->curNode;
+	std::vector<key> v;
+	v.push_back(cur);
+	double cost=this->nmap.find(cur)->second.g;
+
+	while(cur!=this->goal){
+		double nextcost=HUGE_VAL;
+		key nextkey;
+
+		for(auto&n:this->nmap.find(cur)->second.neigh()){
+			auto nit=this->nmap.find(n);
+			if (nit->second.g<nextcost){
+				nextcost=nit->second.g;
+				nextkey=nit->second.k;
+			}
+		
+		}
+		cur=nextkey;
+		v.push_back(cur);
+	}
+	return v;
+
+
 }
 
 void Pathf::process(){
